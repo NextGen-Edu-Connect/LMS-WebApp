@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Nextgen Edu Connect</title>
+
+    <style>
+
+        * {
+
+            margin: 0;
+
+            padding: 0;
+
+            box-sizing: border-box;
+        }
+
+        body {
+
+            font-family: "Segoe UI", sans-serif;
+
+            height: 100vh;
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            overflow: hidden;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #020617,
+                    #0f172a,
+                    #1e3a8a
+                );
+        }
+
+        /* BACKGROUND GLOW */
+
+        .bg1 {
+
+            position: absolute;
+
+            width: 350px;
+
+            height: 350px;
+
+            background: #2563eb;
+
+            border-radius: 50%;
+
+            top: -120px;
+
+            left: -120px;
+
+            filter: blur(100px);
+
+            opacity: 0.5;
+        }
+
+        .bg2 {
+
+            position: absolute;
+
+            width: 400px;
+
+            height: 400px;
+
+            background: #38bdf8;
+
+            border-radius: 50%;
+
+            bottom: -150px;
+
+            right: -100px;
+
+            filter: blur(120px);
+
+            opacity: 0.4;
+        }
+
+        /* LOGIN CARD */
+
+        .login-container {
+
+            position: relative;
+
+            width: 420px;
+
+            padding: 40px;
+
+            border-radius: 30px;
+
+            background:
+                rgba(255,255,255,0.08);
+
+            backdrop-filter: blur(18px);
+
+            border:
+                1px solid rgba(255,255,255,0.12);
+
+            box-shadow:
+                0 12px 40px rgba(0,0,0,0.4);
+
+            color: white;
+
+            z-index: 5;
+        }
+
+        /* LOGO */
+
+        .logo {
+
+            width: 85px;
+
+            height: 85px;
+
+            margin: auto;
+
+            margin-bottom: 18px;
+
+            border-radius: 24px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #60a5fa
+                );
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            font-size: 30px;
+
+            font-weight: bold;
+
+            letter-spacing: 2px;
+
+            box-shadow:
+                0 0 25px rgba(37,99,235,0.6);
+        }
+
+        h1 {
+
+            text-align: center;
+
+            font-size: 32px;
+
+            margin-bottom: 8px;
+        }
+
+        .sub-text {
+
+            text-align: center;
+
+            color: #cbd5e1;
+
+            margin-bottom: 28px;
+
+            font-size: 15px;
+        }
+
+        /* ROLE SECTION */
+
+        .role-selection {
+
+            margin-bottom: 22px;
+        }
+
+        .role-title {
+
+            display: block;
+
+            margin-bottom: 10px;
+
+            font-size: 14px;
+
+            color: #dbeafe;
+
+            font-weight: 500;
+        }
+
+        .role-wrapper {
+
+            display: flex;
+
+            gap: 10px;
+        }
+
+        .role-option {
+
+            flex: 1;
+
+            position: relative;
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: center;
+
+            justify-content: center;
+
+            padding: 14px 10px;
+
+            border-radius: 18px;
+
+            cursor: pointer;
+
+            transition: all 0.25s ease;
+
+            background:
+                rgba(255,255,255,0.05);
+
+            border:
+                1px solid rgba(255,255,255,0.08);
+
+            overflow: hidden;
+        }
+
+        .role-option::before {
+
+            content: "";
+
+            position: absolute;
+
+            inset: 0;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(59,130,246,0.18),
+                    transparent
+                );
+
+            opacity: 0;
+
+            transition: 0.3s;
+        }
+
+        .role-option:hover {
+
+            transform: translateY(-2px);
+
+            border:
+                1px solid rgba(96,165,250,0.35);
+
+            background:
+                rgba(255,255,255,0.08);
+
+            box-shadow:
+                0 6px 18px rgba(37,99,235,0.18);
+        }
+
+        .role-option:hover::before {
+
+            opacity: 1;
+        }
+
+        .role-option.active {
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(37,99,235,0.40),
+                    rgba(59,130,246,0.16)
+                );
+
+            border:
+                1px solid rgba(96,165,250,0.65);
+
+            box-shadow:
+                0 8px 22px rgba(37,99,235,0.28);
+        }
+
+        .role-option.active::after {
+
+            content: "";
+
+            position: absolute;
+
+            top: 8px;
+
+            right: 8px;
+
+            width: 8px;
+
+            height: 8px;
+
+            border-radius: 50%;
+
+            background: #60a5fa;
+
+            box-shadow:
+                0 0 10px #60a5fa;
+        }
+
+        .role-icon {
+
+            width: 42px;
+
+            height: 42px;
+
+            border-radius: 12px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-size: 20px;
+
+            margin-bottom: 8px;
+
+            background:
+                rgba(255,255,255,0.08);
+
+            border:
+                1px solid rgba(255,255,255,0.08);
+        }
+
+        .role-info h3 {
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+            color: white;
+
+            text-align: center;
+        }
+
+        /* INPUTS */
+
+        .input-group {
+
+            margin-bottom: 18px;
+        }
+
+        input {
+
+            width: 100%;
+
+            padding: 15px;
+
+            border: none;
+
+            border-radius: 16px;
+
+            background:
+                rgba(255,255,255,0.10);
+
+            color: white;
+
+            font-size: 15px;
+
+            outline: none;
+
+            transition: 0.3s;
+        }
+
+        input::placeholder {
+
+            color: #cbd5e1;
+        }
+
+        input:focus {
+
+            background:
+                rgba(255,255,255,0.16);
+
+            box-shadow:
+                0 0 12px rgba(59,130,246,0.7);
+        }
+
+        /* BUTTON */
+
+        button {
+
+            width: 100%;
+
+            padding: 15px;
+
+            border: none;
+
+            border-radius: 16px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #60a5fa
+                );
+
+            color: white;
+
+            font-size: 17px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: 0.3s;
+        }
+
+        button:hover {
+
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 10px 24px rgba(37,99,235,0.4);
+        }
+
+        #msg {
+
+            text-align: center;
+
+            margin-top: 18px;
+
+            color: #ff9b9b;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+    <!-- BACKGROUND -->
+
+    <div class="bg1"></div>
+
+    <div class="bg2"></div>
+
+    <!-- LOGIN CARD -->
+
+    <div class="login-container">
+
+        <div class="logo">
+
+            NEC
+
+        </div>
+
+        <h1>Welcome Back</h1>
+
+        <p class="sub-text">
+
+            Login to continue your learning journey
+
+        </p>
+
+        <!-- ROLE SELECTION -->
+
+        <div class="role-selection">
+
+            <label class="role-title">
+
+                Continue As
+
+            </label>
+
+            <div class="role-wrapper">
+
+                <div class="role-option active"
+                     onclick="selectRole(this,'Student')">
+
+                    <div class="role-icon">
+
+                        🎓
+
+                    </div>
+
+                    <div class="role-info">
+
+                        <h3>Student</h3>
+
+                    </div>
+
+                </div>
+
+                <div class="role-option"
+                     onclick="selectRole(this,'Tutor')">
+
+                    <div class="role-icon">
+
+                        👨‍🏫
+
+                    </div>
+
+                    <div class="role-info">
+
+                        <h3>Tutor</h3>
+
+                    </div>
+
+                </div>
+
+                <div class="role-option"
+                     onclick="selectRole(this,'Admin')">
+
+                    <div class="role-icon">
+
+                        🛡️
+
+                    </div>
+
+                    <div class="role-info">
+
+                        <h3>Admin</h3>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- HIDDEN ROLE -->
+
+        <input type="hidden"
+               id="role"
+               value="Student">
+
+        <!-- USERNAME -->
+
+        <div class="input-group">
+
+            <input type="text"
+                   id="username"
+                   placeholder="Enter Username">
+
+        </div>
+
+        <!-- PASSWORD -->
+
+        <div class="input-group">
+
+            <input type="password"
+                   id="password"
+                   placeholder="Enter Password">
+
+        </div>
+
+        <!-- LOGIN BUTTON -->
+
+        <button onclick="doLogin()">
+
+            Login
+
+        </button>
+
+        <h3 id="msg"></h3>
+
+    </div>
+
+    <!-- SUPABASE -->
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+    <!-- APP JS -->
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>

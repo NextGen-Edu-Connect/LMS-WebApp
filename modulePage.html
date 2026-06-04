@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Module Learning</title>
+
+<link rel="preconnect"
+      href="https://fonts.googleapis.com">
+
+<link rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins,sans-serif;
+}
+
+body{
+    min-height:100vh;
+    padding:35px;
+
+    background:
+    linear-gradient(
+        135deg,
+        #020617,
+        #0f172a,
+        #172554,
+        #1d4ed8
+    );
+
+    color:white;
+}
+
+/* BACK */
+
+.back-btn{
+    display:inline-block;
+    padding:12px 22px;
+    background:
+        rgba(255,255,255,0.08);
+    border-radius:16px;
+    cursor:pointer;
+    margin-bottom:28px;
+    transition:0.3s;
+}
+
+.back-btn:hover{
+    background:
+        rgba(255,255,255,0.15);
+}
+
+/* CARD */
+
+.main-card{
+
+    max-width:1200px;
+
+    margin:auto;
+
+    background:
+        rgba(255,255,255,0.08);
+
+    backdrop-filter:blur(18px);
+
+    border:
+        1px solid rgba(255,255,255,0.08);
+
+    border-radius:36px;
+
+    padding:35px;
+}
+
+#moduleTitle{
+    font-size:42px;
+    margin-bottom:28px;
+}
+
+/* VIDEO */
+
+.video-wrapper{
+
+    width:100%;
+
+    max-width:950px;
+
+    margin:0 auto 35px;
+
+    border-radius:30px;
+
+    overflow:hidden;
+
+    background:#000;
+
+    box-shadow:
+        0 15px 40px rgba(
+            0,0,0,.35
+        );
+}
+
+video{
+    width:100%;
+    height:520px;
+    display:block;
+    object-fit:contain;
+    background:#000;
+}
+
+/* QUIZ BUTTON */
+
+.quiz-section{
+    text-align:center;
+    margin-top:20px;
+}
+
+#quizBtn{
+
+    border:none;
+
+    padding:18px 36px;
+
+    border-radius:20px;
+
+    font-size:18px;
+
+    font-weight:600;
+
+    color:white;
+
+    background:
+        rgba(255,255,255,0.1);
+
+    cursor:not-allowed;
+
+    transition:0.35s;
+}
+
+#quizBtn.enabled{
+
+    cursor:pointer;
+
+    background:
+        linear-gradient(
+            135deg,
+            #06b6d4,
+            #2563eb
+        );
+
+    box-shadow:
+        0 12px 28px rgba(
+            37,99,235,.35
+        );
+}
+
+#quizBtn.enabled:hover{
+    transform:
+        translateY(-4px);
+}
+
+.info{
+    text-align:center;
+    color:#cbd5e1;
+    margin-top:18px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="back-btn"
+     onclick="history.back()">
+
+    ← Back
+
+</div>
+
+<div class="main-card">
+
+    <h1 id="moduleTitle">
+        Loading...
+    </h1>
+
+    <div class="video-wrapper">
+
+        <video id="videoPlayer"
+               controls>
+
+        </video>
+
+    </div>
+
+    <div class="quiz-section">
+
+        <button id="quizBtn"
+                disabled>
+
+            🔒 Complete Video to Start Quiz
+
+        </button>
+
+        <div class="info">
+
+            Watch the full video to unlock quiz
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
+const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
+const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
+
+const params =new URLSearchParams(window.location.search);
+
+const moduleId =
+params.get("id");
+
+const courseId =
+params.get("course");
+
+let quizId = "";
+
+async function loadModule()
+{
+    /* LOAD MODULE */
+
+    const {
+        data,
+        error
+    } =
+    await client
+        .from(
+            "videos"
+        )
+        .select("*")
+        .eq(
+            "id",
+            moduleId
+        )
+        .single();
+
+    if(error)
+    {
+        console.log(
+            error
+        );
+        return;
+    }
+
+    /* LOAD COURSE */
+
+    const {
+        data:course,
+        error:courseError
+    }
+    =
+    await client
+        .from(
+            "courses"
+        )
+        .select("*")
+        .eq(
+            "id",
+            courseId
+        )
+        .single();
+
+    if(courseError)
+    {
+        console.log(
+            courseError
+        );
+        return;
+    }
+
+    /* STORE VALUES */
+
+    window.moduleName =
+    data.module_name;
+
+    window.courseName =
+    course.title;
+
+    quizId =
+    data.quiz_id;
+
+    /* UI */
+
+    document
+    .getElementById(
+        "moduleTitle"
+    ).innerHTML =
+    data.module_name;
+
+    document
+    .getElementById(
+        "videoPlayer"
+    ).src =
+    data.video_url;
+}
+
+document
+.getElementById(
+    "videoPlayer"
+)
+.onended =
+function()
+{
+    const btn =
+    document.getElementById(
+        "quizBtn"
+    );
+
+    btn.disabled =
+    false;
+
+    btn.classList.add(
+        "enabled"
+    );
+
+    btn.innerHTML =
+    "📝 Start Quiz";
+
+   btn.onclick =
+function()
+{
+    location.href =
+
+    "quizPage.html"+
+    "?quiz="+quizId+
+    "&module="+moduleId+
+    "&course="+courseId+
+    "&moduleName="+
+    encodeURIComponent(
+        moduleName
+    )+
+    "&courseName="+
+    encodeURIComponent(
+        courseName
+    );
+};
+};
+
+loadModule();
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Course Details</title>
+
+<link rel="preconnect"  href="https://fonts.googleapis.com">
+<link rel="preconnect"  href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins,sans-serif;
+}
+
+body{
+    min-height:100vh;
+    padding:30px;
+
+    background:
+    linear-gradient(
+        135deg,
+        #020617,
+        #0f172a,
+        #172554,
+        #1d4ed8
+    );
+
+    color:white;
+}
+
+/* BACK */
+
+.back-btn{
+    background:
+        rgba(255,255,255,0.08);
+
+    padding:12px 20px;
+    border-radius:16px;
+    display:inline-block;
+    cursor:pointer;
+    margin-bottom:25px;
+    transition:0.3s;
+}
+
+.back-btn:hover{
+    background:
+        rgba(255,255,255,0.15);
+}
+
+/* BANNER */
+
+.course-banner{
+    background:
+        rgba(255,255,255,0.08);
+
+    backdrop-filter:blur(18px);
+
+    border-radius:34px;
+
+    overflow:hidden;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    min-height:340px;
+
+    padding:35px;
+}
+
+.banner-img{
+    width:55%;
+    height:300px;
+    object-fit:cover;
+    border-radius:28px;
+    display:block;
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.35);
+}
+
+.banner-content{
+    width:40%;
+    padding-left:35px;
+}
+
+.banner-content h1{
+    font-size:42px;
+    margin-bottom:10px;
+}
+
+.banner-content p{
+    color:#dbeafe;
+    line-height:1.8;
+}
+
+/* PROGRESS */
+
+.progress-box{
+    margin-top:25px;
+}
+
+.progress-bar{
+    width:100%;
+    height:12px;
+
+    background:
+        rgba(255,255,255,0.12);
+
+    border-radius:30px;
+    overflow:hidden;
+}
+
+.progress{
+    height:100%;
+    background:
+        linear-gradient(
+            90deg,
+            #06b6d4,
+            #3b82f6
+        );
+}
+
+/* MODULES */
+
+.section-title{
+    font-size:28px;
+    margin-bottom:25px;
+}
+
+.modules-grid{
+    display:grid;
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(300px,1fr)
+        );
+    gap:22px;
+}
+
+.module-card{
+
+    background:
+        rgba(255,255,255,0.08);
+
+    backdrop-filter:blur(18px);
+
+    border-radius:28px;
+
+    padding:25px;
+
+    cursor:pointer;
+
+    transition:0.35s;
+}
+
+.module-card:hover{
+    transform:
+        translateY(-8px);
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,0.3);
+}
+
+.module-card h3{
+    margin-bottom:10px;
+}
+
+.module-card p{
+    color:#dbeafe;
+}
+
+.locked{
+    opacity:0.45;
+    cursor:not-allowed;
+}
+
+.completed{
+    border:
+        2px solid #22c55e;
+}
+
+</style>
+</head>
+<body>
+<div class="back-btn" onclick="history.back()">
+    ← Back
+</div>
+<div id="courseBanner" class="course-banner">
+</div>
+<h2 class="section-title">
+    Course Modules
+</h2>
+
+<div id="modulesGrid" class="modules-grid">
+</div>
+<script>
+
+const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
+const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
+const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
+
+const params =new URLSearchParams(window.location.search);
+const courseId =params.get("id");
+
+async function loadCourse()
+{
+    /* COURSE */
+
+    const {
+        data:course
+    }
+    =
+    await client
+        .from(
+            "courses"
+        )
+        .select("*")
+        .eq(
+            "id",
+            courseId
+        )
+        .single();
+
+    /* MODULES */
+
+    const {
+        data:modules
+    }
+    =
+    await client
+        .from(
+            "videos"
+        )
+        .select("*")
+        .eq(
+            "course_id",
+            courseId
+        );
+
+    /* STUDENT TRACKING */
+
+    const studentRegno =
+    localStorage.getItem(
+        "studentRegno"
+    );
+
+    const {
+        data:tracking
+    }
+    =
+    await client
+        .from(
+            "studentcoursetracking"
+        )
+        .select("*")
+        .eq(
+            "student_regno",
+            studentRegno
+        )
+        .eq(
+            "course_name",
+            course.title
+        );
+
+    /* MAP */
+
+    const completedMap =
+    {};
+
+    tracking.forEach(
+        t =>
+    {
+        if(
+            t.quiz_completed
+        )
+        {
+            completedMap[
+                t.module_name
+            ] = true;
+        }
+    });
+
+    /* PROGRESS */
+
+    let completedCount = 0;
+
+    modules.forEach(
+        m =>
+    {
+        if(
+            completedMap[
+                m.module_name
+            ]
+        )
+        {
+            completedCount++;
+        }
+    });
+
+    const percent =
+    Math.round(
+        (
+            completedCount /
+            modules.length
+        ) * 100
+    );
+
+    /* BANNER */
+
+    document
+    .getElementById(
+        "courseBanner"
+    ).innerHTML =
+
+    `
+
+    <img src="${course.thumbnail}"
+         class="banner-img">
+
+    <div class="banner-content">
+
+        <h1>
+            ${course.title}
+        </h1>
+
+        <p>
+            ${course.description}
+        </p>
+
+        <div class="progress-box">
+
+            <div class="progress-bar">
+
+                <div class="progress"
+                     style="
+                     width:${percent}%">
+                </div>
+
+            </div>
+
+            <div style="margin-top:10px">
+
+                ${percent}% Completed
+
+            </div>
+
+        </div>
+
+    </div>
+
+    `;
+
+    /* MODULES */
+
+    let html = "";
+
+    modules.forEach(
+        (m,index)=>
+    {
+        const completed =
+        completedMap[
+            m.module_name
+        ];
+
+        let locked =
+        false;
+
+        if(index>0)
+        {
+            const prev =
+            modules[index-1];
+
+            locked =
+            !completedMap[
+                prev.module_name
+            ];
+        }
+
+        html += `
+
+        <div class="module-card
+             ${locked?"locked":""}
+             ${completed?"completed":""}"
+
+             onclick="
+             ${locked
+             ?''
+             :"openModule('"+m.id+"')"}
+             ">
+
+            <h3>
+
+                ${completed
+                ?'✅'
+                :locked
+                ?'🔒'
+                :'▶'}
+
+                ${m.module_name}
+
+            </h3>
+
+            <p>
+
+                ${completed
+                ?"Completed"
+                :locked
+                ?"Locked"
+                :"Ready to learn"}
+
+            </p>
+
+        </div>
+
+        `;
+    });
+
+    document
+    .getElementById(
+        "modulesGrid"
+    ).innerHTML =
+    html;
+}
+
+function openModule(id)
+{
+    location.href ="modulePage.html?id="+id+"&course="+courseId;
+}
+loadCourse();
+</script>
+
+</body>
+</html>

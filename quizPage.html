@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>Quiz</title>
+
+<link rel="preconnect"
+      href="https://fonts.googleapis.com">
+
+<link rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins,sans-serif;
+}
+
+body{
+
+    min-height:100vh;
+
+    padding:35px;
+
+    background:
+    linear-gradient(
+        135deg,
+        #020617,
+        #0f172a,
+        #172554,
+        #1d4ed8
+    );
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    color:white;
+}
+
+/* CARD */
+
+.quiz-card{
+
+    width:100%;
+    max-width:900px;
+
+    background:
+        rgba(255,255,255,0.08);
+
+    backdrop-filter:blur(18px);
+
+    border:
+        1px solid rgba(255,255,255,0.08);
+
+    border-radius:34px;
+
+    padding:40px;
+}
+
+.quiz-title{
+
+    font-size:34px;
+
+    margin-bottom:25px;
+
+    text-align:center;
+}
+
+#question{
+
+    font-size:26px;
+
+    margin-bottom:35px;
+
+    line-height:1.5;
+}
+
+/* OPTIONS */
+
+.option{
+
+    background:
+        rgba(255,255,255,0.08);
+
+    padding:20px;
+
+    border-radius:22px;
+
+    margin-bottom:18px;
+
+    cursor:pointer;
+
+    transition:0.3s;
+
+    border:
+        2px solid transparent;
+}
+
+.option:hover{
+
+    background:
+        rgba(255,255,255,0.15);
+
+    transform:
+        translateX(5px);
+}
+
+.option.selected{
+
+    border:
+        2px solid #3b82f6;
+
+    background:
+        rgba(59,130,246,.2);
+}
+
+/* BUTTON */
+
+.submit-wrap{
+    text-align:center;
+    margin-top:30px;
+}
+
+#submitBtn{
+
+    border:none;
+
+    padding:18px 38px;
+
+    border-radius:20px;
+
+    font-size:18px;
+
+    font-weight:600;
+
+    color:white;
+
+    cursor:pointer;
+
+    background:
+        linear-gradient(
+            135deg,
+            #06b6d4,
+            #2563eb
+        );
+
+    transition:0.3s;
+}
+
+#submitBtn:hover{
+    transform:
+        translateY(-3px);
+}
+
+/* RESULT */
+
+.result{
+
+    display:none;
+
+    margin-top:25px;
+
+    padding:18px;
+
+    border-radius:18px;
+
+    text-align:center;
+
+    font-size:18px;
+}
+
+.success{
+    background:
+        linear-gradient(
+            135deg,
+            #16a34a,
+            #22c55e
+        );
+}
+
+.fail{
+    background:
+        linear-gradient(
+            135deg,
+            #dc2626,
+            #ef4444
+        );
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="quiz-card">
+
+    <div class="quiz-title">
+        📝 Module Quiz
+    </div>
+
+    <h2 id="question">
+        Loading...
+
+    </h2>
+    <div id="options">
+
+    </div>
+
+    <div class="submit-wrap">
+
+        <button id="submitBtn">
+
+            Submit Quiz
+
+        </button>
+
+    </div>
+
+    <div id="successMsg"
+         class="result success">
+
+        🎉 Quiz Passed
+
+    </div>
+
+    <div id="failMsg"
+         class="result fail">
+
+        ❌ Wrong Answer
+
+    </div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
+const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
+const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
+
+const params =new URLSearchParams(window.location.search);
+const quizId =params.get("quiz");
+const moduleId =params.get("module");
+
+const courseId =params.get("course");
+
+const moduleName =
+decodeURIComponent(
+    params.get(
+        "moduleName"
+    )
+);
+
+const courseName =
+decodeURIComponent(
+    params.get(
+        "courseName"
+    )
+);
+
+let quizQuestions = [];
+let answers = {};
+
+async function loadQuiz()
+{
+    const {
+        data,
+        error
+    } =
+    await client
+        .from(
+            "quizzes"
+        )
+        .select("*")
+        .eq(
+            "quiz_id",
+            quizId);
+
+    if(error)
+    {
+        console.log(error);
+        return;
+    }
+
+    quizQuestions =
+    data;
+
+    let html="";
+
+    data.forEach(
+        (q,index)=>
+    {
+        html += `
+
+        <div class="question-card">
+
+            <h3>
+
+                Q${index+1}.
+                ${q.question}
+
+            </h3>
+
+            <div class="option"
+                 onclick="
+                 selectOption(
+                 this,
+                 '${q.id}',
+                 '${q.option1}'
+                 )">
+
+                ${q.option1}
+
+            </div>
+
+            <div class="option"
+                 onclick="
+                 selectOption(
+                 this,
+                 '${q.id}',
+                 '${q.option2}'
+                 )">
+
+                ${q.option2}
+
+            </div>
+
+            <div class="option"
+                 onclick="
+                 selectOption(
+                 this,
+                 '${q.id}',
+                 '${q.option3}'
+                 )">
+
+                ${q.option3}
+
+            </div>
+
+            <div class="option"
+                 onclick="
+                 selectOption(
+                 this,
+                 '${q.id}',
+                 '${q.option4}'
+                 )">
+
+                ${q.option4}
+
+            </div>
+
+        </div>
+
+        `;
+    });
+
+    document
+    .getElementById(
+        "question"
+    ).style.display =
+    "none";
+
+    document
+    .getElementById(
+        "options"
+    ).innerHTML =
+    html;
+}
+
+function selectOption(
+    element,
+    questionId,
+    answer
+)
+{
+    const parent =
+    element.parentElement;
+
+    parent
+    .querySelectorAll(
+        ".option"
+    )
+    .forEach(
+        o =>
+        o.classList.remove(
+            "selected"
+        )
+    );
+
+    element.classList.add(
+        "selected"
+    );
+
+    answers[
+        questionId
+    ] = answer;
+}
+
+document
+.getElementById(
+    "submitBtn"
+)
+.onclick =
+async function()
+{
+    let score = 0;
+
+    quizQuestions.forEach(
+        q =>
+    {
+        if(
+            answers[q.id] ===
+            q.correct_answer
+        )
+        {
+            score++;
+        }
+    });
+
+    const total =
+    quizQuestions.length;
+
+    const percent =
+    Math.round(
+        (
+            score /
+            total
+        ) * 100
+    );
+
+    const result =
+    percent >= 60
+    ? "PASS"
+    : "FAIL";
+
+    const studentRegno =
+    localStorage.getItem(
+        "studentRegno"
+    );
+
+    await client
+    .from(
+        "studentcoursetracking"
+    )
+    .upsert({
+
+        student_regno:
+        studentRegno,
+
+        course_name:
+        courseName,
+
+        module_name:
+        moduleName,
+
+        score:
+        percent+"%",
+
+        result:
+        result,
+
+        status:
+        result==="PASS"
+        ? "Completed"
+        : "Retest",
+
+        video_completed:
+        true,
+
+        quiz_completed:
+        result==="PASS"
+
+    });
+
+    if(
+        result==="PASS"
+    )
+    {
+        successMsg.innerHTML =
+
+        `
+        🎉 Passed
+        <br><br>
+        Score :
+        ${percent}%
+        `;
+
+        successMsg.style.display =
+        "block";
+
+        setTimeout(
+        function()
+        {
+            location.href =
+            "coursePage.html?id="+
+            courseId;
+        },
+        2500
+        );
+    }
+    else
+    {
+        failMsg.innerHTML =
+
+        `
+        ❌ Failed
+        <br><br>
+        Score :
+        ${percent}%
+        <br><br>
+        Retest Required
+        `;
+
+        failMsg.style.display =
+        "block";
+
+        submitBtn.innerHTML =
+        "🔄 Retest";
+
+        submitBtn.onclick =
+        function()
+        {
+            location.reload();
+        };
+    }
+};
+
+loadQuiz();
+
+</script>
+
+</body>
+</html>

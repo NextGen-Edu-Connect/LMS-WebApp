@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEC Admin Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Poppins", sans-serif;
+            background:
+                linear-gradient(
+                    135deg,
+                    #020617,
+                    #0f172a,
+                    #172554,
+                    #1d4ed8
+                );
+
+            min-height: 100vh;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* BACKGROUND */
+
+        .bg1 {
+            position: fixed;
+            width: 420px;
+            height: 420px;
+            border-radius: 50%;
+            background: #2563eb;
+            top: -160px;
+            left: -160px;
+            filter: blur(140px);
+            opacity: 0.45;
+        }
+
+        .bg2 {
+            position: fixed;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: #38bdf8;
+            bottom: -220px;
+            right: -180px;
+            filter: blur(150px);
+            opacity: 0.35;
+        }
+
+        /* LAYOUT */
+
+        .layout {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            height: 100vh;
+             overflow: hidden;
+        }
+
+        /* SIDEBAR */
+
+        .sidebar
+         {
+            width: 240px;
+            background:  rgba(255,255,255,0.08);
+            border-right:  1px solid rgba(255,255,255,0.08);
+            backdrop-filter: blur(20px);
+            padding: 18px 14px;
+            display: flex;
+            flex-direction: column;
+             overflow-y: auto;
+             height: 100vh;
+        }
+
+        .logo
+         {
+            text-align: center;
+             margin-bottom: 22px;
+        }
+
+        .logo-circle {
+            width: 58px;
+            height: 58px;
+            margin: auto;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg,#2563eb,#60a5fa);
+            box-shadow: 0 0 18px rgba(37,99,235,0.45);
+            margin-bottom: 10px;
+        }
+       .logo h2 {
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.logo p {
+    font-size: 11px;
+    color: #cbd5e1;
+}
+
+/* MENU */
+
+.menu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex: 1;
+}
+
+.menu-item {
+    padding: 11px 14px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: 0.3s;
+    background:rgba(255,255,255,0.05);
+    border:1px solid transparent;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.menu-item:hover {
+    transform: translateX(3px);
+    background:
+        rgba(255,255,255,0.08);
+}
+
+.menu-item.active {
+    background:
+        linear-gradient(
+            135deg,
+            rgba(37,99,235,0.35),
+            rgba(96,165,250,0.10)
+        );
+    border:
+        1px solid rgba(96,165,250,0.35);
+    box-shadow:
+        0 6px 18px rgba(37,99,235,0.22);
+}
+
+/* LOGOUT BUTTON */
+
+.logout-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 14px;
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #60a5fa
+        );
+
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 14px;
+}
+
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 10px 24px rgba(37,99,235,0.4);
+        }
+
+        /* CONTENT */
+
+        .content {
+            flex: 1;
+            padding: 28px;
+            overflow-y: auto;
+            height: 100vh;
+        }
+
+        .topbar {
+            margin-bottom: 30px;
+        }
+
+        .topbar h1 {
+            font-size: 36px;
+            font-weight: 700;
+        }
+
+        .topbar p {
+            color: #cbd5e1;
+            margin-top: 6px;
+        }
+
+        /* PAGE */
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* CARD */
+
+        .card {
+            background:rgba(255,255,255,0.08);
+            border:1px solid rgba(255,255,255,0.10);
+            border-radius: 28px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+            box-shadow:
+                0 10px 30px rgba(0,0,0,0.25);
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        /* INPUT */
+
+        .input-group {
+            margin-bottom: 18px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            background:rgba(255,255,255,0.08);
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus,
+        textarea:focus,
+        select:focus {
+            background:rgba(255,255,255,0.14);
+            box-shadow:0 0 14px rgba(59,130,246,0.6);
+        }
+        textarea {
+            resize: none;
+            height: 110px;
+        }
+
+        input::placeholder,textarea::placeholder {
+            color: #cbd5e1;
+        }
+
+        option {
+            color: black;
+        }
+
+        /* BUTTON */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 16px;
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #60a5fa
+                );
+
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 10px 24px rgba(37,99,235,0.4);
+        }
+
+        /* TABLE */
+
+        .table-search {
+            margin-bottom: 20px;
+            max-width: 350px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            background:
+                rgba(255,255,255,0.06);
+            border:
+                1px solid rgba(255,255,255,0.08);
+            border-radius: 24px;
+            backdrop-filter: blur(18px);
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 16px;
+            color: #93c5fd;
+            border-bottom:
+                1px solid rgba(255,255,255,0.1);
+        }
+
+        td {
+            padding: 16px;
+            border-bottom:
+                1px solid rgba(255,255,255,0.06);
+        }
+
+        .action-btn {
+            border: none;
+            padding: 10px 14px;
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            margin-right: 8px;
+            font-size: 13px;
+        }
+
+        .edit-btn {
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #3b82f6
+                );
+        }
+
+        .delete-btn {
+            background:
+                linear-gradient(
+                    135deg,
+                    #dc2626,
+                    #ef4444
+                );
+        }
+
+        /* MODAL OVERLAY */
+
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    background: rgba(0,0,0,0.65);
+
+    justify-content: center;
+    align-items: flex-start;
+
+    overflow-y: auto;
+    padding: 30px 15px;
+}
+
+/* SHOW MODAL */
+
+.modal.show {
+    display: flex;
+}
+
+/* MODAL BOX */
+
+.modal-content {
+
+    width: 500px;
+    max-width: 95%;
+
+    background: #101828;
+    border-radius: 20px;
+
+    padding: 25px;
+
+    position: relative;
+
+    max-height: 90vh;
+    overflow-y: auto;
+
+    animation: popup 0.3s ease;
+
+    box-shadow:
+        0 15px 40px rgba(0,0,0,0.4);
+}
+
+/* SCROLL */
+
+.modal-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 10px;
+}
+       
+
+@keyframes popup {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+}
+
+.close-btn {
+    font-size: 24px;
+    cursor: pointer;
+    color: #cbd5e1;
+    transition: 0.3s;
+}
+
+.close-btn:hover {
+    color: #ffffff;
+    transform: rotate(90deg);
+}
+        #adminMsg {
+            margin-top: 20px;
+            color: #93c5fd;
+        }
+    </style>
+</head>
+
+
+<body>
+    <div class="bg1"></div>
+    <div class="bg2"></div>
+    <div class="layout">
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+            <div class="logo">
+                <div class="logo-circle">
+                    NEC
+                </div>
+                <h2>Admin Panel</h2>
+                <p>
+                    Learning Management System
+                </p>
+            </div>
+            <div class="menu">
+                <div class="menu-item active"
+                     onclick="showPage('createUserPage', this)">
+                    👤 Create User
+                </div>
+                <div class="menu-item"
+                     onclick="showPage('addCoursePage', this)">
+                    📘 Add Course
+                </div>
+                <div class="menu-item"
+                     onclick="showPage('addVideoPage', this)">
+                    🎥 Add Video
+                </div>
+                <div class="menu-item"
+                     onclick="showPage('addQuizPage', this)">
+                    ❓ Add Quiz
+                </div>
+                 <div class="menu-item"
+                     onclick="showPage('addCollegePage', this)">
+                    🏫 Add College
+                </div>
+
+                <div class="menu-item"
+                     onclick="showPage('manageUsersPage', this)">
+                    🧑‍💼 Manage Users
+                </div>
+                <div class="menu-item"
+                      onclick="showPage('manageCoursesPage', this)">
+                    📚 Manage Courses
+                </div>
+                <div class="menu-item"
+                     onclick="showPage('manageVideosPage', this)">
+                    🎬 Manage Videos
+                </div>
+                <div class="menu-item"
+                     onclick="showPage('manageQuizPage', this)">
+                    📝 Manage Quiz
+                </div>
+                <div class="menu-item"
+                     onclick="showPage('manageCollegePage', this)">
+                    🏫 Manage College
+                </div>
+            </div>
+            <button class="logout-btn"
+                    onclick="logout()">
+                Logout
+            </button>
+
+        </div>
+
+        <!-- CONTENT -->
+
+        <div class="content">
+            <div class="topbar">
+                <h1>
+                    Dashboard
+                </h1>
+                <p>
+                    Manage Users, Courses,
+                    Videos and Quizzes
+                </p>
+            </div>
+
+            <!-- CREATE USER -->
+
+            <div class="page active" id="createUserPage">
+                <div class="card">
+                    <div class="card-title">
+                        Create User
+                    </div>
+                    <div class="input-group">
+                        <input type="text"
+                               id="newUsername"
+                               placeholder="Username">
+
+                    </div>
+
+                    <div class="input-group">
+
+                        <input type="password"
+                               id="newPassword"
+                               placeholder="Password">
+                    </div>
+
+                    <div class="input-group">
+                        <select id="newRole">
+                           <option value="Student">
+                                Student
+                            </option>
+                            <option value="Tutor">
+                                Tutor
+                            </option>
+                        </select>
+                    </div>
+                    <button class="btn"
+                            onclick="createUser()">
+                        Create User
+                    </button>
+                </div>
+            </div>
+
+            <!-- ADD COURSE -->
+
+            <div class="page" id="addCoursePage">
+                <div class="card">
+                    <div class="card-title">
+                        Add Course
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text"
+                               id="courseTitle"
+                               placeholder="Course Title">
+                    </div>
+
+                    <div class="input-group">
+                        <textarea id="courseDescription"
+                                  placeholder="Course Description"></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="file"   id="courseThumbnail" accept=".jpg,.jpeg,.png">
+                    </div>
+
+                    <button class="btn"
+                            onclick="addCourse()">
+                        Add Course
+                    </button>
+                </div>
+            </div>
+
+            <!-- ADD VIDEO -->
+
+            <div class="page" id="addVideoPage">
+
+                <div class="card">
+                    <div class="card-title">
+                        Add Video
+                    </div>
+
+                    <div class="input-group">
+                        <select id="videoCourse"></select>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text"
+                            id="moduleName"
+                            placeholder="Module Name">
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text"
+                            id="videoTitle"
+                            placeholder="Video Title">
+                    </div>
+
+                    <div class="input-group">
+                        <input type="file"
+                            id="videoFile"
+                            accept="video/mp4">
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text"
+                            id="quizId"
+                            placeholder="Quiz Id"
+                            readonly>
+                    </div>
+                    <button class="btn"
+                            onclick="addVideo()">
+                        Add Video
+                    </button>
+                </div>
+            </div>
+
+            <!-- ADD QUIZ -->
+
+            <div class="page" id="addQuizPage">
+                <div class="card">
+                    <div class="card-title">
+                        Add Quiz
+                    </div>
+
+                    <div class="input-group">
+                        <select id="quizIdDropDown"></select>
+                    </div>
+
+                    <div class="input-group">
+                        <textarea id="question" placeholder="Question"></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="option1" placeholder="Option 1">
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="option2" placeholder="Option 2">
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="option3" placeholder="Option 3">
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="option4" placeholder="Option 4">
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="correctAnswer" placeholder="Correct Answer">
+                    </div>
+
+                    <button class="btn" onclick="addQuizQuestion()">
+                        Add Quiz
+                    </button>
+
+                </div>
+            </div>
+
+             <!-- ADD COLLEGES -->
+
+            <div class="page" id="addCollegePage">
+                <div class="card">
+                    <div class="card-title">
+                        Add College
+                    </div>
+                    <div class="input-group">
+                        <input type="text" id="college_name" placeholder="College Name">
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="place" placeholder="Place">
+                    </div>
+
+                    <button class="btn" onclick="addCollege()">
+                        Add College
+                    </button>
+
+                </div>
+            </div>
+
+
+            <!-- MANAGE USERS -->
+
+<div class="page" id="manageUsersPage">
+    <div class="card">
+        <div class="card-title">
+            Manage Users
+        </div>
+
+        <!-- SEARCH -->
+
+        <div class="table-search">
+            <input type="text"
+                   placeholder="Search User..."
+                   onkeyup="searchTable(this, 'usersTable')">
+        </div>
+        <!-- TABLE -->
+        <div class="table-container">
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>Password</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="usersBody">
+             </tbody>
+         </table>
+        </div>
+    </div>
+</div>
+
+            <!-- MANAGE COURSES -->
+
+            <div class="page" id="manageCoursesPage">
+
+                <div class="table-search">
+                    <input type="text" placeholder="Search Course..." onkeyup="searchTable(this, 'coursesTable')">
+                </div>
+
+                <div class="table-container">
+                    <table id="coursesTable">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Description</th>
+                                <th>Thumbnail</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="coursesBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MANAGE VIDEOS -->
+
+            <div class="page" id="manageVideosPage">
+                <div class="table-search">
+                    <input type="text" placeholder="Search Course..." onkeyup="searchTable(this, 'videosTable')">
+                </div>
+                <div class="table-container">
+                    <table id="videosTable">
+                        <thead>
+                            <tr>
+                                <th>Course</th>
+                                <th>Module Name</th>
+                                <th>Video Title</th>     
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="videosBody">
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+            <!-- MANAGE QUIZ -->
+
+            <div class="page" id="manageQuizPage">
+                <div class="table-search">
+                    <input type="text" placeholder="Search Question..." onkeyup="searchTable(this, 'quizTable')">
+                </div>
+                <div class="table-container">
+                    <table id="quizTable">
+                        <thead>
+                            <tr>
+                                <th>Quiz ID</th>
+                                <th>Questions</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="quizBody">
+                       </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="adminMsg"></div>
+        
+
+    <!-- MANAGE COLLEGE -->
+
+            <div class="page" id="manageCollegePage">
+                <div class="table-search">
+                    <input type="text" placeholder="Search College..." onkeyup="searchTable(this, 'collegeTable')">
+                </div>
+                <div class="table-container">
+                    <table id="collegeTable">
+                        <thead>
+                            <tr>
+                                <th>College Name</th>
+                                <th>Place</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="collegeBody">
+                       </tbody>
+                    </table>
+                </div>
+            </div>
+    </div>
+</div>
+
+   
+<!-- EDIT USER MODAL -->
+
+<div class="modal" id="editUserModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit User</h2>
+            <span class="close-btn" onclick="closeEditModal()">
+                ✕
+            </span>
+        </div>
+        <input type="hidden" id="editUserId">
+        <div class="input-group">
+            <input type="text"
+                   id="editUsername"
+                   placeholder="Username">
+        </div>
+        <div class="input-group">
+            <input type="password"
+                   id="editPassword"
+                   placeholder="Password">
+        </div>
+        <div class="input-group">
+            <select id="editRole">
+                <option value="Student">
+                    Student
+                </option>
+                <option value="Tutor">
+                    Tutor
+                </option>
+                <option value="Admin">
+                    Admin
+                </option>
+           </select>
+        </div>
+        <button class="btn" onclick="updateUser()">
+            Update User
+        </button>
+    </div>
+</div>
+
+<!-- EDIT COURSE MODAL -->
+
+<div class="modal" id="editCourseModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Course</h2>
+            <span class="close-btn" onclick="closeCourseModal()">
+                ✕
+            </span>
+        </div>
+        <input type="hidden"  id="editCourseId">
+        <div class="input-group">
+            <input type="text"
+                   id="editCourseName"
+                   placeholder="Course Name">
+        </div>
+        <div class="input-group">
+            <textarea
+                id="editCourseDescription"
+                placeholder="Description"></textarea>
+        </div>
+        <div class="input-group">
+            <img
+                id="previewThumbnail"
+                width="120"
+                style="
+                    border-radius:12px;
+                    margin-bottom:15px;
+                ">
+            <input type="file"  id="editCourseThumbnail">
+        </div>
+        <button class="btn" onclick="updateCourse()">
+            Update Course
+        </button>
+    </div>
+</div>
+
+<!-- EDIT VIDEO MODAL -->
+
+
+<div class="modal" id="editVideoModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Video</h2>
+            <span class="close-btn" onclick="closeVideoModal()">
+                ✕
+            </span>
+        </div>
+        <input type="hidden" id="editVideoId">
+        <!-- COURSE -->
+        <div class="input-group">
+            <select id="editVideoCourse">
+            </select>
+        </div>
+
+        <!-- MODULE -->
+
+        <div class="input-group">
+            <input type="text"
+                   id="editModuleName"
+                   placeholder="Module Name">
+
+        </div>
+        <!-- VIDEO TITLE -->
+        <div class="input-group">
+            <input type="text"
+                   id="editVideoTitle"
+                   placeholder="Video Title">
+        </div>
+        <!-- VIDEO FILE -->
+        <div class="input-group">
+            <input type="file"
+                   id="editVideoFile"
+                   accept="video/mp4">
+        </div>
+        <!-- PREVIEW -->
+        <div class="input-group">
+            <input type="text" id="editvideoURL" readonly>
+            </video>
+
+        </div>
+        <button class="btn" onclick="updateVideo()">
+            Update Video
+        </button>
+    </div>
+</div>
+
+<!-- EDIT QUIZ MODAL -->
+
+<div class="modal" id="editQuizModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Quizzes</h2>
+            <span class="close-btn" onclick="closeQuizModal()">
+                ✕
+            </span>
+        </div>
+        <input type="hidden"  id="editId">
+        <div class="input-group">
+            <select id="editQuizId">
+            </select>
+        </div>
+        <div class="input-group">
+            <input type="text"
+                   id="editQuestion"
+                   placeholder="Question">
+        </div>
+        <div class="input-group">
+            <textarea
+                id="editOption1"
+                placeholder="Option1"></textarea>
+        </div>
+        <div class="input-group">
+            <textarea
+                id="editOption2"
+                placeholder="Option2"></textarea>
+        </div>
+        <div class="input-group">
+            <textarea
+                id="editOption3"
+                placeholder="Option3"></textarea>
+        </div>
+        <div class="input-group">
+            <textarea
+                id="editOption4"
+                placeholder="Option4"></textarea>
+        </div>
+        <div class="input-group">
+            <textarea
+                id="editAnswer"
+                placeholder="CorrectAnswer"></textarea>
+        </div>
+        <button class="btn" onclick="updateQuiz()">
+            Update Course
+        </button>
+    </div>
+</div>
+
+<!-- EDIT COLLEGE MODAL -->
+
+<div class="modal" id="editCollegeModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Colleges</h2>
+            <span class="close-btn" onclick="closeCollegeModal()">
+                ✕
+            </span>
+        </div>
+        <input type="hidden"  id="editCollegeId">
+       
+        <div class="input-group">
+            <textarea
+                id="editCollegeName"
+                placeholder="College Name"></textarea>
+        </div>
+        <div class="input-group">
+            <textarea
+                id="editPlace"
+                placeholder="Place"></textarea>
+        </div>
+        <button class="btn" onclick="updateCollege()">
+            Update College
+        </button>
+    </div>
+</div>
+
+<script>
+    const videoCourse =document.getElementById("videoCourse");
+    const moduleName = document.getElementById("moduleName");
+    const quizId = document.getElementById("quizId");
+    function generateQuizId() 
+    {
+        const course =
+            videoCourse.options[
+                videoCourse.selectedIndex
+            ].text
+                .trim()
+                .replace(/\s+/g, "_");
+
+        const module =
+            moduleName.value
+                .trim()
+                .replace(/\s+/g, "_");
+
+        if (course && module) {
+            quizId.value =
+                `${course}_${module}`;
+        }
+        else {
+            quizId.value = "";
+
+        }
+    }
+
+    videoCourse.addEventListener("change",generateQuizId);
+    moduleName.addEventListener("input",generateQuizId);
+
+</script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+    <script src="app.js"></script>
+
+    
+
+</body>
+
+</html>
