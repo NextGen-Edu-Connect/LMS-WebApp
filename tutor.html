@@ -1525,44 +1525,82 @@
 
             <!-- STUDENT ENROLLMENT PAGE -->
             <section class="page" id="enrollmentPage">
-                <div class="form-card">
+                <div class="form-card" style="max-width: 800px;">
                     <div class="form-header">
-                        <h2>Add Single Student</h2>
-                        <p>Enroll a student manually into a course and batch.</p>
+                        <h2>Student Enrollment Form</h2>
+                        <p>Enroll a registered student into an LMS learning course.</p>
                     </div>
                     <form id="enrollmentForm" onsubmit="handleEnrollmentSubmit(event)">
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label for="enrollMail">Email Address *</label>
-                                <select id="enrollMail" required>
-                                    <option value="">Select Student Email</option>
-                                    <!-- Populated from Supabase Users -->
+                            <div class="form-group form-group-full">
+                                <label for="enrollSelectStudent">Select Student (Register Number) *</label>
+                                <select id="enrollSelectStudent" onchange="handleStudentSelect(this.value)" required>
+                                    <option value="">Select Register Number</option>
                                 </select>
                             </div>
+                            
                             <div class="form-group">
-                                <label for="enrollName">Full Name *</label>
-                                <input type="text" id="enrollName" placeholder="Enter Full Name" required>
+                                <label for="enrollName">Student Name *</label>
+                                <input type="text" id="enrollName" placeholder="Auto-populated" required readonly style="opacity: 0.8; background: rgba(255,255,255,0.03);">
                             </div>
+                            
                             <div class="form-group">
                                 <label for="enrollRegNo">Register Number *</label>
-                                <input type="text" id="enrollRegNo" placeholder="e.g. NEC2026101" required>
+                                <input type="text" id="enrollRegNo" placeholder="Auto-populated" required readonly style="opacity: 0.8; background: rgba(255,255,255,0.03);">
                             </div>
+                            
                             <div class="form-group">
-                                <label for="enrollCollege">College Name *</label>
-                                <select id="enrollCollege" required>
-                                    <option value="">Select College</option>
-                                    <!-- Populated from Supabase Colleges -->
+                                <label for="enrollMail">Email Address *</label>
+                                <input type="email" id="enrollMail" placeholder="Auto-populated" required readonly style="opacity: 0.8; background: rgba(255,255,255,0.03);">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="enrollPhone">Phone Number</label>
+                                <input type="text" id="enrollPhone" placeholder="Enter Phone Number">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="enrollGender">Gender</label>
+                                <select id="enrollGender">
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
                                 </select>
                             </div>
+                            
+                            <div class="form-group">
+                                <label for="enrollDept">Department</label>
+                                <input type="text" id="enrollDept" placeholder="e.g. CSE">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="enrollCollege">College Name</label>
+                                <input type="text" id="enrollCollege" placeholder="College Name">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="enrollCollegeCode">College Code</label>
+                                <input type="text" id="enrollCollegeCode" placeholder="College Code">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="enrollDistrict">District</label>
+                                <input type="text" id="enrollDistrict" placeholder="District">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="enrollUniversity">University</label>
+                                <input type="text" id="enrollUniversity" placeholder="University">
+                            </div>
+                            
                             <div class="form-group form-group-full">
                                 <label for="enrollCourse">Course *</label>
                                 <select id="enrollCourse" required>
                                     <option value="">Select Course</option>
-                                    <!-- Populated from Supabase Courses -->
                                 </select>
                             </div>
                         </div>
-                        <button type="submit" class="btn-submit">
+                        <button type="submit" class="btn-submit" style="margin-top: 15px;">
                             <i class="fa-solid fa-user-plus"></i> Enroll Student
                         </button>
                     </form>
@@ -1577,14 +1615,21 @@
                         <p>Upload an Excel spreadsheet (.xlsx) with student records to enroll multiple students at once.</p>
                     </div>
                     
+                    <div class="form-group" style="margin-bottom: 24px; max-width: 400px;">
+                        <label for="bulkEnrollCourse" style="font-weight: 600; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 8px;">Select Course for Enrollment *</label>
+                        <select id="bulkEnrollCourse" required>
+                            <option value="">Select Course</option>
+                        </select>
+                    </div>
+
                     <div class="upload-zone" onclick="document.getElementById('excelFileInput').click()">
                         <i class="fa-solid fa-file-excel"></i>
                         <h3>Drag & Drop Excel File here or Click to Browse</h3>
-                        <p>Accepts only .xlsx spreadsheet files. Make sure the headers match the template.</p>
+                        <p>Accepts only .xlsx spreadsheet files. Make sure columns match the template exactly.</p>
                         <input type="file" id="excelFileInput" accept=".xlsx" style="display: none;" onchange="handleExcelUpload(event)">
                     </div>
 
-                    <div class="upload-actions">
+                    <div class="upload-actions" style="margin-top: 20px;">
                         <button class="bulk-download-btn" onclick="downloadSampleTemplate()">
                             <i class="fa-solid fa-download"></i> Download Excel Template (.xlsx)
                         </button>
@@ -1593,17 +1638,36 @@
                         </button>
                     </div>
 
-                    <div id="excelPreviewSection" style="display: none;">
-                        <h3 style="font-family: var(--font-display); margin-bottom: 12px; font-size: 16px;">Excel Data Preview</h3>
+                    <!-- Validation Summary Banner -->
+                    <div id="bulkSummarySection" style="display: none; margin-top: 24px; margin-bottom: 20px;">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
+                            <div class="stat-card" style="padding: 15px; border-radius: 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.15);">
+                                <h4 style="font-size: 12px; color: var(--text-secondary);">Total Records</h4>
+                                <p id="summaryTotal" style="font-size: 22px; font-weight: 700; margin-top: 5px; color: var(--text-primary);">0</p>
+                            </div>
+                            <div class="stat-card" style="padding: 15px; border-radius: 12px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.15);">
+                                <h4 style="font-size: 12px; color: var(--text-secondary);">Valid to Import</h4>
+                                <p id="summaryValid" style="font-size: 22px; font-weight: 700; margin-top: 5px; color: #10b981;">0</p>
+                            </div>
+                            <div class="stat-card" style="padding: 15px; border-radius: 12px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15);">
+                                <h4 style="font-size: 12px; color: var(--text-secondary);">Validation Errors</h4>
+                                <p id="summaryErrors" style="font-size: 22px; font-weight: 700; margin-top: 5px; color: #ef4444;">0</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="excelPreviewSection" style="display: none; margin-top: 20px;">
+                        <h3 style="font-family: var(--font-display); margin-bottom: 12px; font-size: 16px;">Excel Data Preview & Validation</h3>
                         <div class="table-responsive-wrapper">
                             <table>
                                 <thead>
                                     <tr>
-                                        <th>Name</th>
-                                        <th>Reg No</th>
-                                        <th>College</th>
+                                        <th>Student Name</th>
+                                        <th>Register No</th>
                                         <th>Email</th>
-                                        <th>Course</th>
+                                        <th>College Name</th>
+                                        <th>Department</th>
+                                        <th>Validation Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="excelPreviewBody">
@@ -1615,7 +1679,7 @@
                 </div>
             </section>
 
-            <!-- STUDENT TRACKING PAGE -->
+            <!-- STUDENT TRACKING PAGE / ENROLLMENT MANAGEMENT -->
             <section class="page" id="trackingPage">
                 <!-- Search & Filters -->
                 <div class="table-controls">
@@ -1623,11 +1687,20 @@
                         <i class="fa-solid fa-magnifying-glass"></i>
                         <input type="text" id="trackSearch" placeholder="Search by Student Name, Register Number or College..." onkeyup="filterTrackingTable()">
                     </div>
-                    <div class="filter-select" style="flex: 1;">
-                        <select id="trackCourseFilter" onchange="filterTrackingTable()">
-                            <option value="">All Courses</option>
-                            <!-- Dynamically loaded -->
-                        </select>
+                    <div style="display: flex; gap: 10px; flex: 1;">
+                        <div class="filter-select" style="flex: 1;">
+                            <select id="trackCourseFilter" onchange="filterTrackingTable()">
+                                <option value="">All Courses</option>
+                            </select>
+                        </div>
+                        <div class="filter-select" style="flex: 1;">
+                            <select id="trackStatusFilter" onchange="filterTrackingTable()">
+                                <option value="">All Statuses</option>
+                                <option value="Enrolled">Enrolled</option>
+                                <option value="Active">Active</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
@@ -1636,11 +1709,13 @@
                     <table>
                         <thead>
                             <tr>
-                                <th>Name</th>
+                                <th>Student Name</th>
                                 <th>Register No</th>
-                                <th>College</th>
-                                <th>Course</th>
-                                <th>Status</th>
+                                <th>Email</th>
+                                <th>College Name</th>
+                                <th>Department</th>
+                                <th>Enrollment Status</th>
+                                <th>Enrollment Date</th>
                                 <th style="text-align: center;">Actions</th>
                             </tr>
                         </thead>
@@ -1694,20 +1769,13 @@
 
             <!-- ACTIVITY TIMELINE PAGE -->
             <section class="page" id="timelinePage">
-                <div class="timeline" id="timelineList">
-                    <!-- Timeline items generated dynamically -->
+                <div class="timeline-wrapper" id="timelineList">
+                    <!-- Dynamic Activity Items -->
                 </div>
             </section>
 
             <!-- REPORTS PAGE -->
             <section class="page" id="reportsPage">
-                <div class="reports-grid">
-                    <div class="report-action-card excel">
-                        <i class="fa-regular fa-file-excel"></i>
-                        <h3>Export Students to Excel</h3>
-                        <p>Download a comprehensive spreadsheet containing student profiles, enrollments, and complete progress metrics.</p>
-                        <button class="report-btn excel" onclick="exportToExcel()">
-                            <i class="fa-solid fa-download"></i> Download .xlsx Spreadsheet
                         </button>
                     </div>
                     <div class="report-action-card pdf">
@@ -1939,39 +2007,42 @@
         }
 
         function populateDropdowns() {
-            const collegeSelect = document.getElementById("enrollCollege");
             const courseSelect = document.getElementById("enrollCourse");
+            const bulkCourseSelect = document.getElementById("bulkEnrollCourse");
             const filterCourseSelect = document.getElementById("trackCourseFilter");
 
-            collegeSelect.innerHTML = '<option value="">Select College</option>';
-            collegesList.forEach(college => {
-                collegeSelect.innerHTML += `<option value="${college}">${college}</option>`;
-            });
+            if (courseSelect) courseSelect.innerHTML = '<option value="">Select Course</option>';
+            if (bulkCourseSelect) bulkCourseSelect.innerHTML = '<option value="">Select Course</option>';
+            if (filterCourseSelect) filterCourseSelect.innerHTML = '<option value="">All Courses</option>';
 
-            courseSelect.innerHTML = '<option value="">Select Course</option>';
-            filterCourseSelect.innerHTML = '<option value="">All Courses</option>';
             coursesList.forEach(course => {
-                courseSelect.innerHTML += `<option value="${course.title}">${course.title}</option>`;
-                filterCourseSelect.innerHTML += `<option value="${course.title}">${course.title}</option>`;
+                if (courseSelect) courseSelect.innerHTML += `<option value="${course.title}">${course.title}</option>`;
+                if (bulkCourseSelect) bulkCourseSelect.innerHTML += `<option value="${course.title}">${course.title}</option>`;
+                if (filterCourseSelect) filterCourseSelect.innerHTML += `<option value="${course.title}">${course.title}</option>`;
             });
         }
 
-        // Populates Student Dropdown (Unenrolled users from 'login' where role = 'Student')
-        async function loadUnenrolledStudentsDropdown(enrolledMails) {
+        // Populates Student dropdown using registered students from localStorage who are not enrolled
+        async function loadRegisteredStudentsDropdown() {
             try {
-                const { data: users, error } = await dbClient.from("login").select("username").eq("role", "Student");
-                if (error) throw error;
+                // Fetch enrolled students from Supabase to exclude them
+                const { data: enrolled, error } = await dbClient.from("studentenrollment").select("reg_no");
+                const enrolledRegNos = enrolled ? enrolled.map(e => e.reg_no) : [];
 
-                const enrollSelect = document.getElementById("enrollMail");
-                enrollSelect.innerHTML = '<option value="">Select Student Email</option>';
+                // Fetch registered from localStorage
+                const registered = JSON.parse(localStorage.getItem("registered_students")) || [];
 
-                users.forEach(user => {
-                    if (!enrolledMails.includes(user.username)) {
-                        enrollSelect.innerHTML += `<option value="${user.username}">${user.username}</option>`;
-                    }
-                });
-            } catch (err) {
-                console.error("Error loading student drop down:", err);
+                const selectElement = document.getElementById("enrollSelectStudent");
+                if (selectElement) {
+                    selectElement.innerHTML = '<option value="">Select Student (Register Number)</option>';
+                    registered.forEach(student => {
+                        if (!enrolledRegNos.includes(student.reg_no)) {
+                            selectElement.innerHTML += `<option value="${student.reg_no}">${student.reg_no} - ${student.student_name}</option>`;
+                        }
+                    });
+                }
+            } catch(err) {
+                console.error("Error loading registered students dropdown:", err);
             }
         }
 
@@ -1987,9 +2058,8 @@
                 let localAssignments = JSON.parse(localStorage.getItem("tutor_assignments_ext")) || [];
                 let localTimeline = JSON.parse(localStorage.getItem("tutor_timeline_ext")) || [];
 
-                // Track Supabase enrolled mails
-                const enrolledMails = supabaseEnrollments.map(e => e.mail_id);
-                await loadUnenrolledStudentsDropdown(enrolledMails);
+                // Load the dropdown list
+                await loadRegisteredStudentsDropdown();
 
                 // Sync students data
                 let syncedStudents = [];
@@ -1997,28 +2067,43 @@
                 // Process entries from Supabase
                 supabaseEnrollments.forEach(se => {
                     // Find if we already have extended info in localstorage
-                    let ext = localStudents.find(ls => ls.email === se.mail_id || ls.regNo === se.student_regno);
+                    let ext = localStudents.find(ls => ls.email === se.mail_id || ls.regNo === se.reg_no);
                     
                     if (ext) {
                         // Keep synchronized with Supabase
                         ext.name = se.student_name || ext.name;
-                        ext.regNo = se.student_regno || ext.regNo;
+                        ext.regNo = se.reg_no || ext.regNo;
                         ext.college = se.college_name || ext.college;
+                        ext.phone = se.phone_no || ext.phone;
+                        ext.gender = se.gender || ext.gender;
+                        ext.department = se.department || ext.department;
+                        ext.collegeCode = se.college_code || ext.collegeCode;
+                        ext.district = se.district || ext.district;
+                        ext.university = se.university || ext.university;
+                        ext.enrollmentStatus = se.enrollment_status || ext.enrollmentStatus || "Enrolled";
+                        ext.status = se.enrollment_status || ext.status || "Enrolled";
                         syncedStudents.push(ext);
                     } else {
                         // Create a fresh student record with default values
                         const newExt = {
                             id: se.id,
                             name: se.student_name || "Unknown Student",
-                            regNo: se.student_regno || ("NEC" + Date.now().toString().slice(-6)),
+                            regNo: se.reg_no || ("NEC" + Date.now().toString().slice(-6)),
                             college: se.college_name || "NEC Engineering College",
+                            collegeCode: se.college_code || "",
                             email: se.mail_id,
+                            phone: se.phone_no || "",
+                            gender: se.gender || "Male",
+                            department: se.department || "",
+                            district: se.district || "",
+                            university: se.university || "",
                             course: coursesList.length > 0 ? coursesList[Math.floor(Math.random() * coursesList.length)].title : "Generative AI",
-                            progress: Math.floor(Math.random() * 80) + 10,
-                            quizzes: [Math.floor(Math.random() * 40) + 60, Math.floor(Math.random() * 30) + 70],
-                            assignments: [Math.floor(Math.random() * 30) + 70],
-                            status: "Active",
-                            enrollmentDate: new Date().toISOString().split('T')[0]
+                            progress: 10,
+                            quizzes: [0],
+                            assignments: [0],
+                            enrollmentStatus: se.enrollment_status || "Enrolled",
+                            status: se.enrollment_status || "Enrolled",
+                            enrollmentDate: se.created_at ? se.created_at.split('T')[0] : new Date().toISOString().split('T')[0]
                         };
                         syncedStudents.push(newExt);
                         
@@ -2027,7 +2112,7 @@
                             id: 'act_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
                             type: 'enrollment',
                             title: 'New Student Enrolled',
-                            body: `${newExt.name} has been enrolled in ${newExt.course}.`,
+                            body: `${newExt.name} has been enrolled.`,
                             time: newExt.enrollmentDate
                         });
                     }
@@ -2049,7 +2134,7 @@
                             id: 'sub_' + student.regNo,
                             studentId: student.regNo,
                             studentName: student.name,
-                            course: student.course,
+                            course: student.course || "Generative AI",
                             moduleName: 'Module 1: Getting Started',
                             code: `def lms_assignment_solution():\n    # Solution developed by ${student.name}\n    print("Hello LMS Team Project Portal")\n    return True`,
                             github: `https://github.com/${student.name.toLowerCase().replace(/\s+/g, '')}/lms-workspace`,
@@ -2392,13 +2477,16 @@
             // Filtering
             const searchKeyword = document.getElementById("trackSearch").value.toLowerCase();
             const courseFilter = document.getElementById("trackCourseFilter").value;
+            const statusFilter = document.getElementById("trackStatusFilter").value;
 
             trackingFilteredData = studentsData.filter(s => {
                 const matchesSearch = s.name.toLowerCase().includes(searchKeyword) ||
                                       s.regNo.toLowerCase().includes(searchKeyword) ||
-                                      s.college.toLowerCase().includes(searchKeyword);
+                                      (s.college && s.college.toLowerCase().includes(searchKeyword));
                 const matchesCourse = courseFilter === "" || s.course === courseFilter;
-                return matchesSearch && matchesCourse;
+                const statusStr = (s.status || s.enrollmentStatus || "Enrolled");
+                const matchesStatus = statusFilter === "" || statusStr.toLowerCase() === statusFilter.toLowerCase();
+                return matchesSearch && matchesCourse && matchesStatus;
             });
 
             // Pagination logic
@@ -2416,19 +2504,24 @@
             const pageData = trackingFilteredData.slice(startIndex, endIndex);
 
             if (pageData.length === 0) {
-                body.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No students found matching the filters.</td></tr>`;
+                body.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px;">No students found matching the filters.</td></tr>`;
                 return;
             }
 
             pageData.forEach(student => {
-                let badgeClass = student.status.toLowerCase();
+                const statusVal = student.status || student.enrollmentStatus || "Enrolled";
+                const badgeClass = statusVal.toLowerCase();
+                const displayDate = student.enrollmentDate || new Date().toISOString().split('T')[0];
+                
                 body.innerHTML += `
                     <tr>
                         <td style="font-weight: 700;">${student.name}</td>
                         <td>${student.regNo}</td>
-                        <td>${student.college}</td>
-                        <td>${student.course}</td>
-                        <td><span class="badge ${badgeClass}">${student.status}</span></td>
+                        <td>${student.email}</td>
+                        <td>${student.college || '-'}</td>
+                        <td>${student.department || '-'}</td>
+                        <td><span class="badge ${badgeClass}">${statusVal}</span></td>
+                        <td>${displayDate}</td>
                         <td style="text-align: center; white-space: nowrap;">
                             <button class="btn-submit" style="width: auto; padding: 6px 12px; font-size: 12px; border-radius: 8px; margin-right: 6px; background: rgba(37, 99, 235, 0.15); color: #3b82f6; border: 1px solid rgba(37, 99, 235, 0.3);" onclick="openProgressModal('${student.regNo}')">
                                 <i class="fa-solid fa-chart-line" style="margin-right: 4px;"></i> View Progress
@@ -2669,92 +2762,147 @@
             showToast(`Assignment ${status.toLowerCase()} successfully.`, "success");
         }
 
-        // MANUAL ENROLLMENT HANDLER
+        // STUDENT MANUAL ENROLLMENT HANDLER
+        let pendingEnrollmentData = null;
+
+        function handleStudentSelect(regNo) {
+            if (!regNo) {
+                // Clear fields
+                document.getElementById("enrollName").value = "";
+                document.getElementById("enrollRegNo").value = "";
+                document.getElementById("enrollMail").value = "";
+                document.getElementById("enrollPhone").value = "";
+                document.getElementById("enrollGender").value = "Male";
+                document.getElementById("enrollDept").value = "";
+                document.getElementById("enrollCollege").value = "";
+                document.getElementById("enrollCollegeCode").value = "";
+                document.getElementById("enrollDistrict").value = "";
+                document.getElementById("enrollUniversity").value = "";
+                return;
+            }
+            
+            const registered = JSON.parse(localStorage.getItem("registered_students")) || [];
+            const student = registered.find(s => s.reg_no === regNo);
+            
+            if (student) {
+                document.getElementById("enrollName").value = student.student_name || "";
+                document.getElementById("enrollRegNo").value = student.reg_no || "";
+                document.getElementById("enrollMail").value = student.mail_id || "";
+                document.getElementById("enrollPhone").value = student.phone_no || "";
+                document.getElementById("enrollGender").value = student.gender || "Male";
+                document.getElementById("enrollDept").value = student.department || "";
+                document.getElementById("enrollCollege").value = student.college_name || "";
+                document.getElementById("enrollCollegeCode").value = student.college_code || "";
+                document.getElementById("enrollDistrict").value = student.district || "";
+                document.getElementById("enrollUniversity").value = student.university || "";
+            }
+        }
+
         async function handleEnrollmentSubmit(e) {
             e.preventDefault();
-
-            const mail = document.getElementById("enrollMail").value;
-            const name = document.getElementById("enrollName").value;
+            
             const regNo = document.getElementById("enrollRegNo").value;
+            const name = document.getElementById("enrollName").value;
+            const mail = document.getElementById("enrollMail").value;
+            const phone = document.getElementById("enrollPhone").value;
+            const gender = document.getElementById("enrollGender").value;
+            const dept = document.getElementById("enrollDept").value;
             const college = document.getElementById("enrollCollege").value;
+            const collegeCode = document.getElementById("enrollCollegeCode").value;
+            const district = document.getElementById("enrollDistrict").value;
+            const university = document.getElementById("enrollUniversity").value;
             const course = document.getElementById("enrollCourse").value;
-
-            if (!mail || !name || !regNo || !college || !course) {
+            
+            if (!regNo || !name || !mail || !course) {
                 showToast("Please fill all required fields.", "error");
                 return;
             }
+            
+            pendingEnrollmentData = {
+                regNo, name, mail, phone, gender, dept, college, collegeCode, district, university, course
+            };
+            
+            // Populate confirmation modal
+            document.getElementById("confStudentName").innerText = name;
+            document.getElementById("confRegNo").innerText = regNo;
+            document.getElementById("confEmail").innerText = mail;
+            document.getElementById("confCourse").innerText = course;
+            
+            openModal("confirmEnrollmentModal");
+        }
 
-            // Insert to Supabase studentenrollment first
-            showToast("Submitting to database...", "info");
+        async function executeEnrollment() {
+            if (!pendingEnrollmentData) return;
+            
+            closeModal("confirmEnrollmentModal");
+            showToast("Enrolling student...", "info");
+            
+            const d = pendingEnrollmentData;
+            const tutorUsername = localStorage.getItem("user") || "NEC Tutor";
             
             try {
+                // 1. Insert into Supabase table studentenrollment
                 const { data, error } = await dbClient.from("studentenrollment").insert([{
-                    mail_id: mail,
-                    student_name: name,
-                    student_regno: regNo,
-                    college_name: college
+                    student_name: d.name,
+                    reg_no: d.regNo,
+                    mail_id: d.mail,
+                    phone_no: d.phone,
+                    gender: d.gender,
+                    department: d.dept,
+                    college_name: d.college,
+                    college_code: d.collegeCode,
+                    district: d.district,
+                    university: d.university,
+                    tutor_username: tutorUsername,
+                    enrollment_status: "Enrolled"
                 }]).select();
-
+                
                 if (error) throw error;
-
-                // Sync and append local data
-                const newStudent = {
-                    id: data[0].id,
-                    name,
-                    regNo,
-                    college,
-                    email: mail,
-                    course,
+                
+                const studentId = (data && data.length > 0) ? data[0].id : 'local_' + Date.now();
+                
+                // 2. Add to Local Storage studentsData list
+                const newEnrollment = {
+                    id: studentId,
+                    name: d.name,
+                    regNo: d.regNo,
+                    email: d.mail,
+                    phone: d.phone,
+                    gender: d.gender,
+                    department: d.dept,
+                    college: d.college,
+                    collegeCode: d.collegeCode,
+                    district: d.district,
+                    university: d.university,
+                    course: d.course,
                     progress: 10,
                     quizzes: [0],
                     assignments: [0],
-                    status: "Active",
+                    status: "Enrolled",
+                    enrollmentStatus: "Enrolled",
                     enrollmentDate: new Date().toISOString().split('T')[0]
                 };
-
-                studentsData.unshift(newStudent);
-                localStorage.setItem("tutor_students_ext", JSON.stringify(studentsData));
-
-                // Add log
-                addActivityLog('enrollment', 'Student Enrolled', `${name} enrolled in ${course} course.`);
-
-                // Reset Form
-                document.getElementById("enrollmentForm").reset();
                 
-                // Refresh list dropdowns
-                await fetchSupabaseBaseData();
-                await syncDatabaseState();
+                studentsData.unshift(newEnrollment);
+                localStorage.setItem("tutor_students_ext", JSON.stringify(studentsData));
+                
+                // 3. Log activity
+                addActivityLog('enrollment', 'Student Enrolled', `${d.name} enrolled in ${d.course}.`);
+                
+                // 4. Update dropdowns so this student's register number disappears immediately
+                await loadRegisteredStudentsDropdown();
+                
+                // Reset form
+                document.getElementById("enrollmentForm").reset();
+                handleStudentSelect(""); // Clear auto-populated fields
+                
                 renderAllData();
-
                 showToast("Student enrolled successfully!", "success");
-                navigate('dashboardPage', document.querySelectorAll('.menu-item')[0]);
-
-            } catch (err) {
-                console.error("Database insert error:", err);
+                navigate('trackingPage', document.querySelectorAll('.menu-item')[3]); // Navigate to student tracking
                 
-                // Fallback to local storage inserting
-                const newStudent = {
-                    id: 'local_' + Date.now(),
-                    name,
-                    regNo,
-                    college,
-                    email: mail,
-                    course,
-                    progress: 10,
-                    quizzes: [0],
-                    assignments: [0],
-                    status: "Active",
-                    enrollmentDate: new Date().toISOString().split('T')[0]
-                };
-
-                studentsData.unshift(newStudent);
-                localStorage.setItem("tutor_students_ext", JSON.stringify(studentsData));
-                addActivityLog('enrollment', 'Student Enrolled', `${name} enrolled in ${course} (Offline mode).`);
-
-                document.getElementById("enrollmentForm").reset();
-                renderAllData();
-                showToast("Enrolled student (Local database fallback).", "success");
-                navigate('dashboardPage', document.querySelectorAll('.menu-item')[0]);
+            } catch (err) {
+                console.error("Enrollment failed:", err);
+                showToast("Enrollment failed: " + (err.message || "Unknown error"), "error");
             }
         }
 
@@ -2765,7 +2913,7 @@
 
             try {
                 // Delete from Supabase
-                if (!id.startsWith('local') && !id.startsWith('mock')) {
+                if (!id.toString().startsWith('local') && !id.toString().startsWith('mock')) {
                     const { error } = await dbClient.from("studentenrollment").delete().eq("id", id);
                     if (error) throw error;
                 }
@@ -2777,6 +2925,8 @@
                 // Log
                 addActivityLog('enrollment', 'Roster Deletion', `${name} has been removed from database.`);
 
+                // Refresh
+                await loadRegisteredStudentsDropdown();
                 renderAllData();
                 showToast("Student record deleted successfully.", "success");
             } catch (err) {
@@ -2787,13 +2937,23 @@
 
         // BULK IMPORT EXCEL FILE
         let excelParsedRecords = [];
+        let validationSummary = { total: 0, valid: 0, errors: 0 };
 
-        function handleExcelUpload(e) {
+        async function handleExcelUpload(e) {
             const file = e.target.files[0];
             if (!file) return;
 
+            const course = document.getElementById("bulkEnrollCourse").value;
+            if (!course) {
+                showToast("Please select a Course first.", "error");
+                e.target.value = "";
+                return;
+            }
+
+            showToast("Reading file...", "info");
+
             const reader = new FileReader();
-            reader.onload = function(evt) {
+            reader.onload = async function(evt) {
                 try {
                     const data = new Uint8Array(evt.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
@@ -2805,22 +2965,104 @@
                         return;
                     }
 
-                    // Format data & validate columns
-                    excelParsedRecords = jsonData.map((row, idx) => ({
-                        name: row.Name || row.name || "Student " + (idx + 1),
-                        regNo: row.RegNo || row.regno || row["Register Number"] || "NEC2026" + (100 + idx),
-                        college: row.College || row.college || "NEC College",
-                        email: row.Email || row.email || `student${idx}@gmail.com`,
-                        course: row.Course || row.course || "Generative AI"
-                    }));
+                    // Fetch existing enrollments from database for duplication check
+                    const { data: dbEnrollments, error } = await dbClient.from("studentenrollment").select("reg_no, mail_id");
+                    const dbRegNos = dbEnrollments ? dbEnrollments.map(item => item.reg_no) : [];
+                    const dbEmails = dbEnrollments ? dbEnrollments.map(item => item.mail_id) : [];
 
-                    // Show preview
+                    excelParsedRecords = [];
+                    validationSummary = { total: jsonData.length, valid: 0, errors: 0 };
+
+                    const regNoCountsInFile = {};
+                    const emailCountsInFile = {};
+
+                    // First pass: count occurrences in file for file-level duplicate detection
+                    jsonData.forEach(row => {
+                        const regNo = (row.reg_no || row.RegNo || "").toString().trim();
+                        const email = (row.mail_id || row.Email || "").toString().trim();
+                        if (regNo) regNoCountsInFile[regNo] = (regNoCountsInFile[regNo] || 0) + 1;
+                        if (email) emailCountsInFile[email] = (emailCountsInFile[email] || 0) + 1;
+                    });
+
+                    // Second pass: validate each record
+                    jsonData.forEach((row, idx) => {
+                        const name = row.student_name || row.Name || "";
+                        const regNo = (row.reg_no || row.RegNo || "").toString().trim();
+                        const email = (row.mail_id || row.Email || "").toString().trim();
+                        const phone = row.phone_no || row.Phone || "";
+                        const gender = row.gender || "Male";
+                        const dept = row.department || row.Department || "";
+                        const college = row.college_name || row.College || "";
+                        const collegeCode = row.college_code || row.CollegeCode || "";
+                        const district = row.district || row.District || "";
+                        const university = row.university || row.University || "";
+
+                        let errors = [];
+
+                        if (!name) errors.push("Missing Student Name");
+                        if (!regNo) errors.push("Missing Register Number");
+                        if (!email) errors.push("Missing Email ID");
+
+                        if (regNo) {
+                            if (regNoCountsInFile[regNo] > 1) {
+                                errors.push("Duplicate Register Number in file");
+                            }
+                            if (dbRegNos.includes(regNo)) {
+                                errors.push("Register Number already enrolled");
+                            }
+                        }
+
+                        if (email) {
+                            if (emailCountsInFile[email] > 1) {
+                                errors.push("Duplicate Email in file");
+                            }
+                            if (dbEmails.includes(email)) {
+                                errors.push("Email already enrolled");
+                            }
+                        }
+
+                        const isValid = errors.length === 0;
+                        if (isValid) {
+                            validationSummary.valid++;
+                        } else {
+                            validationSummary.errors++;
+                        }
+
+                        excelParsedRecords.push({
+                            name,
+                            regNo,
+                            email,
+                            phone,
+                            gender,
+                            dept,
+                            college,
+                            collegeCode,
+                            district,
+                            university,
+                            course,
+                            errors,
+                            isValid
+                        });
+                    });
+
+                    // Render Preview and Summary
                     renderExcelPreview();
+                    
+                    document.getElementById("summaryTotal").innerText = validationSummary.total;
+                    document.getElementById("summaryValid").innerText = validationSummary.valid;
+                    document.getElementById("summaryErrors").innerText = validationSummary.errors;
+                    
+                    document.getElementById("bulkSummarySection").style.display = "block";
                     document.getElementById("excelPreviewSection").style.display = "block";
-                    document.getElementById("btnImportExcel").style.display = "inline-flex";
-                    document.getElementById("importCount").innerText = excelParsedRecords.length;
+                    
+                    if (validationSummary.valid > 0) {
+                        document.getElementById("btnImportExcel").style.display = "inline-flex";
+                        document.getElementById("importCount").innerText = validationSummary.valid;
+                    } else {
+                        document.getElementById("btnImportExcel").style.display = "none";
+                    }
 
-                    showToast("Excel file read successfully. Preview generated.", "success");
+                    showToast("Excel file processed and validated.", "success");
                 } catch (err) {
                     showToast("Error parsing Excel file.", "error");
                     console.error(err);
@@ -2834,67 +3076,99 @@
             body.innerHTML = "";
 
             excelParsedRecords.forEach(row => {
+                const statusHtml = row.isValid 
+                    ? `<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">Valid</span>`
+                    : `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; display: block;" title="${row.errors.join(', ')}">${row.errors[0]}</span>`;
+                
                 body.innerHTML += `
                     <tr>
-                        <td style="font-weight: 700;">${row.name}</td>
-                        <td>${row.regNo}</td>
-                        <td>${row.college}</td>
-                        <td>${row.email}</td>
-                        <td>${row.course}</td>
+                        <td style="font-weight: 600;">${row.name || '-'}</td>
+                        <td>${row.regNo || '-'}</td>
+                        <td>${row.email || '-'}</td>
+                        <td>${row.college || '-'}</td>
+                        <td>${row.dept || '-'}</td>
+                        <td>${statusHtml}</td>
                     </tr>
                 `;
             });
         }
 
         async function processBulkImport() {
-            if (excelParsedRecords.length === 0) return;
+            const validRecords = excelParsedRecords.filter(r => r.isValid);
+            if (validRecords.length === 0) return;
 
-            showToast(`Importing ${excelParsedRecords.length} student records...`, "info");
+            showToast(`Importing ${validRecords.length} student records...`, "info");
             let successCount = 0;
+            const tutorUsername = localStorage.getItem("user") || "NEC Tutor";
 
-            for (const record of excelParsedRecords) {
+            for (const record of validRecords) {
                 try {
-                    // Try to insert in Supabase
+                    // 1. Insert into Supabase table studentenrollment
                     const { data, error } = await dbClient.from("studentenrollment").insert([{
-                        mail_id: record.email,
                         student_name: record.name,
-                        student_regno: record.regNo,
-                        college_name: record.college
+                        reg_no: record.regNo,
+                        mail_id: record.email,
+                        phone_no: record.phone,
+                        gender: record.gender,
+                        department: record.dept,
+                        college_name: record.college,
+                        college_code: record.collegeCode,
+                        district: record.district,
+                        university: record.university,
+                        tutor_username: tutorUsername,
+                        enrollment_status: "Enrolled"
                     }]).select();
+
+                    if (error) throw error;
 
                     const studentId = (data && data.length > 0) ? data[0].id : 'local_' + Date.now() + Math.random().toString(36).slice(2, 6);
 
-                    // Add to Local Storage List
+                    // 2. Add to Local Storage studentsData list
                     const newStudent = {
                         id: studentId,
                         name: record.name,
                         regNo: record.regNo,
                         college: record.college,
+                        collegeCode: record.collegeCode,
                         email: record.email,
+                        phone: record.phone,
+                        gender: record.gender,
+                        department: record.dept,
+                        district: record.district,
+                        university: record.university,
                         course: record.course,
                         progress: 10,
                         quizzes: [0],
                         assignments: [0],
-                        status: "Active",
+                        status: "Enrolled",
+                        enrollmentStatus: "Enrolled",
                         enrollmentDate: new Date().toISOString().split('T')[0]
                     };
 
                     studentsData.unshift(newStudent);
                     successCount++;
                 } catch (err) {
-                    console.warn(`Database insert failed for ${record.name}, adding locally:`, err);
-                    // Add local only
+                    console.error(`Database insert failed for ${record.name}, fallback locally:`, err);
+                    
+                    // Fallback to local only
                     const newStudent = {
                         id: 'local_' + Date.now() + Math.random().toString(36).slice(2, 6),
                         name: record.name,
                         regNo: record.regNo,
                         college: record.college,
+                        collegeCode: record.collegeCode,
                         email: record.email,
+                        phone: record.phone,
+                        gender: record.gender,
+                        department: record.dept,
+                        district: record.district,
+                        university: record.university,
                         course: record.course,
                         progress: 10,
                         quizzes: [0],
                         assignments: [0],
-                        status: "Active",
+                        status: "Enrolled",
+                        enrollmentStatus: "Enrolled",
                         enrollmentDate: new Date().toISOString().split('T')[0]
                     };
                     studentsData.unshift(newStudent);
@@ -2908,26 +3182,48 @@
             // Log bulk action
             addActivityLog('enrollment', 'Bulk Enrollment', `Imported ${successCount} students via Excel.`);
 
-            // Cleanup bulk area
+            // Reset and clean up
             document.getElementById("excelFileInput").value = "";
+            document.getElementById("bulkSummarySection").style.display = "none";
             document.getElementById("excelPreviewSection").style.display = "none";
             document.getElementById("btnImportExcel").style.display = "none";
             excelParsedRecords = [];
 
-            // Refresh UI
-            await fetchSupabaseBaseData();
-            await syncDatabaseState();
+            // Refresh UI dropdowns and table
+            await loadRegisteredStudentsDropdown();
             renderAllData();
 
             showToast(`Successfully enrolled ${successCount} students!`, "success");
-            navigate('dashboardPage', document.querySelectorAll('.menu-item')[0]);
+            navigate('trackingPage', document.querySelectorAll('.menu-item')[3]); // Navigate to student tracking
         }
 
         // GENERATE TEMPLATE EXCEL FILE FOR USER DOWNLOAD
         function downloadSampleTemplate() {
             const templateData = [
-                { Name: "John Doe", RegNo: "NEC2026101", College: "NEC College of Engineering", Email: "john.doe@gmail.com", Course: "Generative AI" },
-                { Name: "Jane Smith", RegNo: "NEC2026102", College: "PSG College of Technology", Email: "jane.smith@gmail.com", Course: "UI/UX Design" }
+                { 
+                    student_name: "John Doe", 
+                    reg_no: "NEC2026101", 
+                    mail_id: "john.doe@gmail.com", 
+                    phone_no: "9876543210", 
+                    gender: "Male", 
+                    department: "CSE", 
+                    college_name: "NEC College of Engineering", 
+                    college_code: "NEC01", 
+                    district: "Chennai", 
+                    university: "Anna University" 
+                },
+                { 
+                    student_name: "Jane Smith", 
+                    reg_no: "NEC2026102", 
+                    mail_id: "jane.smith@gmail.com", 
+                    phone_no: "9876543211", 
+                    gender: "Female", 
+                    department: "ECE", 
+                    college_name: "PSG College of Technology", 
+                    college_code: "PSG02", 
+                    district: "Coimbatore", 
+                    university: "Anna University" 
+                }
             ];
 
             const worksheet = XLSX.utils.json_to_sheet(templateData);

@@ -518,6 +518,10 @@
                      onclick="showPage('manageCollegePage', this)">
                     🏫 Manage College
                 </div>
+                <div class="menu-item"
+                     onclick="showPage('registerStudentPage', this); loadRegistrationColleges(); renderRegisteredStudents();">
+                    📝 Student Registration
+                </div>
             </div>
             <button class="logout-btn"
                     onclick="logout()">
@@ -842,6 +846,93 @@
                     </table>
                 </div>
             </div>
+
+            <!-- STUDENT REGISTRATION -->
+            <div class="page" id="registerStudentPage">
+                <div class="card" style="margin-bottom: 30px;">
+                    <div class="card-title">Student Registration</div>
+                    <form id="registerStudentForm" onsubmit="registerStudent(event)">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 18px;">
+                            <div class="input-group">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">Register Number *</label>
+                                <input type="text" id="regStudentRegNo" placeholder="e.g. NEC2026101" required>
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">Date of Birth *</label>
+                                <input type="date" id="regStudentDob" required>
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">Student Name *</label>
+                                <input type="text" id="regStudentName" placeholder="Full Name" required>
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">Email Address *</label>
+                                <input type="email" id="regStudentEmail" placeholder="Email" required>
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">Phone Number</label>
+                                <input type="text" id="regStudentPhone" placeholder="Phone">
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">Gender</label>
+                                <select id="regStudentGender">
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">Department</label>
+                                <input type="text" id="regStudentDept" placeholder="e.g. CSE">
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">College Name</label>
+                                <select id="regStudentCollege" required>
+                                    <option value="">Select College</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">College Code</label>
+                                <input type="text" id="regStudentCollegeCode" placeholder="College Code">
+                            </div>
+                            <div class="input-group">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">District</label>
+                                <input type="text" id="regStudentDistrict" placeholder="District">
+                            </div>
+                            <div class="input-group" style="grid-column: span 2;">
+                                <label style="display: block; font-size: 12px; margin-bottom: 6px; color: #93c5fd;">University</label>
+                                <input type="text" id="regStudentUniversity" placeholder="University">
+                            </div>
+                        </div>
+                        <button class="btn" type="submit">Register Student</button>
+                    </form>
+                </div>
+                
+                <!-- Registered Students List -->
+                <div class="card">
+                    <div class="card-title">Registered Students</div>
+                    <div class="table-search">
+                        <input type="text" placeholder="Search Registered Student..." onkeyup="searchTable(this, 'registeredStudentsTable')">
+                    </div>
+                    <div class="table-container">
+                        <table id="registeredStudentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Reg Number</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>College</th>
+                                    <th>Enrollment Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registeredStudentsBody">
+                                <!-- Dynamic Rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
     </div>
 </div>
 
@@ -1082,6 +1173,196 @@
 
     videoCourse.addEventListener("change",generateQuizId);
     moduleName.addEventListener("input",generateQuizId);
+
+    // STUDENT REGISTRATION CODE
+    async function loadRegistrationColleges() {
+        const select = document.getElementById("regStudentCollege");
+        if (!select) return;
+        select.innerHTML = '<option value="">Select College</option>';
+        try {
+            const { data, error } = await client.from("colleges").select("college_name, college_code");
+            if (data) {
+                data.forEach(c => {
+                    select.innerHTML += `<option value="${c.college_name}" data-code="${c.college_code || ''}">${c.college_name}</option>`;
+                });
+            }
+        } catch(err) {
+            console.error("Error loading colleges:", err);
+        }
+    }
+
+    // Auto fill college code when college is selected
+    document.addEventListener("DOMContentLoaded", () => {
+        const collegeSelect = document.getElementById("regStudentCollege");
+        if (collegeSelect) {
+            collegeSelect.addEventListener("change", function() {
+                const selectedOption = this.options[this.selectedIndex];
+                const code = selectedOption.getAttribute("data-code") || "";
+                document.getElementById("regStudentCollegeCode").value = code;
+            });
+        }
+    });
+
+    async function registerStudent(e) {
+        e.preventDefault();
+        const reg_no = document.getElementById("regStudentRegNo").value.trim();
+        const dob = document.getElementById("regStudentDob").value;
+        const student_name = document.getElementById("regStudentName").value.trim();
+        const mail_id = document.getElementById("regStudentEmail").value.trim();
+        const phone_no = document.getElementById("regStudentPhone").value.trim();
+        const gender = document.getElementById("regStudentGender").value;
+        const department = document.getElementById("regStudentDept").value.trim();
+        const college_name = document.getElementById("regStudentCollege").value;
+        const college_code = document.getElementById("regStudentCollegeCode").value.trim();
+        const district = document.getElementById("regStudentDistrict").value.trim();
+        const university = document.getElementById("regStudentUniversity").value.trim();
+
+        if (!reg_no || !dob || !student_name || !mail_id) {
+            alert("Please fill all required fields.");
+            return;
+        }
+
+        // Validate uniqueness in localStorage and database
+        let registered = JSON.parse(localStorage.getItem("registered_students")) || [];
+        if (registered.some(s => s.reg_no === reg_no)) {
+            alert("Error: Register Number already registered locally.");
+            return;
+        }
+        if (registered.some(s => s.mail_id === mail_id)) {
+            alert("Error: Email already registered locally.");
+            return;
+        }
+
+        try {
+            // Check if user already exists in login table
+            const { data: existingUsers, error: checkErr } = await client.from("login").select("username").eq("username", reg_no);
+            if (existingUsers && existingUsers.length > 0) {
+                alert("Error: Register Number already exists in user database.");
+                return;
+            }
+
+            // 1. Insert into Supabase login table
+            const { error: insertErr } = await client.from("login").insert([{
+                username: reg_no,
+                password: dob,
+                role: "Student"
+            }]);
+            if (insertErr) throw insertErr;
+
+            // 2. Save registration profile in localStorage
+            registered.push({
+                reg_no, dob, student_name, mail_id, phone_no, gender, department, college_name, college_code, district, university,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            });
+            localStorage.setItem("registered_students", JSON.stringify(registered));
+
+            // Reset Form
+            document.getElementById("registerStudentForm").reset();
+            alert("Student Registered Successfully!");
+
+            // Refresh table
+            await renderRegisteredStudents();
+        } catch(err) {
+            console.error("Registration failed:", err);
+            alert("Registration failed: " + (err.message || err));
+        }
+    }
+
+    async function renderRegisteredStudents() {
+        const body = document.getElementById("registeredStudentsBody");
+        if (!body) return;
+        body.innerHTML = "<tr><td colspan='6' style='text-align: center;'>Loading...</td></tr>";
+
+        let registered = JSON.parse(localStorage.getItem("registered_students")) || [];
+        
+        // Fetch enrolled students from Supabase to sync status
+        let enrolledRegNos = [];
+        try {
+            const { data, error } = await client.from("studentenrollment").select("reg_no");
+            if (data) {
+                enrolledRegNos = data.map(d => d.reg_no);
+            }
+        } catch (err) {
+            console.error("Error fetching enrollment for status sync:", err);
+        }
+
+        body.innerHTML = "";
+        if (registered.length === 0) {
+            body.innerHTML = "<tr><td colspan='6' style='text-align: center; color: #cbd5e1;'>No students registered yet.</td></tr>";
+            return;
+        }
+
+        registered.forEach(student => {
+            const isEnrolled = enrolledRegNos.includes(student.reg_no);
+            const status = isEnrolled ? "Enrolled" : "Registered";
+            const badgeClass = isEnrolled ? "background: #10b981; color: white; padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600;" : "background: #f59e0b; color: white; padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600;";
+            
+            body.innerHTML += `
+                <tr>
+                    <td>${student.reg_no}</td>
+                    <td>${student.student_name}</td>
+                    <td>${student.mail_id}</td>
+                    <td>${student.college_name || '-'}</td>
+                    <td><span style="${badgeClass}">${status}</span></td>
+                    <td>
+                        <button class="action-btn delete-btn" style="padding: 6px 12px;" onclick="deleteRegisteredStudent('${student.reg_no}')">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    window.deleteRegisteredStudent = async function(reg_no) {
+        if (!confirm(`Are you sure you want to delete registration for ${reg_no}?`)) return;
+        
+        try {
+            // 1. Delete from login table
+            await client.from("login").delete().eq("username", reg_no);
+            
+            // 2. Delete from registered_students in localStorage
+            let registered = JSON.parse(localStorage.getItem("registered_students")) || [];
+            registered = registered.filter(s => s.reg_no !== reg_no);
+            localStorage.setItem("registered_students", JSON.stringify(registered));
+
+            // Refresh
+            await renderRegisteredStudents();
+            alert("Student registration deleted.");
+        } catch(err) {
+            console.error("Error deleting registration:", err);
+            alert("Error deleting registration: " + (err.message || err));
+        }
+    };
+
+    // Pre-populate some mock registered students if localStorage is empty, for better UX
+    if (!localStorage.getItem("registered_students")) {
+        const mockReg = [
+            {
+                reg_no: "NEC2026001", dob: "2005-01-10", student_name: "Aravind Swamy", mail_id: "aravind@gmail.com",
+                phone_no: "9876543210", gender: "Male", department: "CSE", college_name: "KEC", college_code: "",
+                district: "Chennai", university: "Anna University"
+            },
+            {
+                reg_no: "NEC2026002", dob: "2005-05-15", student_name: "Meera Nair", mail_id: "meera@gmail.com",
+                phone_no: "9876543211", gender: "Female", department: "ECE", college_name: "KEC", college_code: "",
+                district: "Chennai", university: "Anna University"
+            },
+            {
+                reg_no: "NEC2026003", dob: "2004-12-05", student_name: "Rohan Das", mail_id: "rohan@gmail.com",
+                phone_no: "9876543212", gender: "Male", department: "IT", college_name: "KEC", college_code: "",
+                district: "Chennai", university: "Anna University"
+            }
+        ];
+        localStorage.setItem("registered_students", JSON.stringify(mockReg));
+    }
+    
+    // Automatically render on load if page is active
+    window.addEventListener("DOMContentLoaded", () => {
+        if (document.getElementById("registerStudentPage").classList.contains("active")) {
+            loadRegistrationColleges();
+            renderRegisteredStudents();
+        }
+    });
 
 </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
