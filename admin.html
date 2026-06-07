@@ -1276,12 +1276,14 @@
 
         let registered = JSON.parse(localStorage.getItem("registered_students")) || [];
         
-        // Fetch enrolled students from Supabase to sync status
-        let enrolledRegNos = [];
+        // Fetch enrolled students and their actual status from Supabase to sync status
+        let enrollmentMap = {};
         try {
-            const { data, error } = await client.from("studentenrollment").select("reg_no");
+            const { data, error } = await client.from("studentenrollment").select("reg_no, enrollment_status");
             if (data) {
-                enrolledRegNos = data.map(d => d.reg_no);
+                data.forEach(d => {
+                    enrollmentMap[d.reg_no] = d.enrollment_status || "Enrolled";
+                });
             }
         } catch (err) {
             console.error("Error fetching enrollment for status sync:", err);
@@ -1294,9 +1296,18 @@
         }
 
         registered.forEach(student => {
-            const isEnrolled = enrolledRegNos.includes(student.reg_no);
-            const status = isEnrolled ? "Enrolled" : "Registered";
-            const badgeClass = isEnrolled ? "background: #10b981; color: white; padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600;" : "background: #f59e0b; color: white; padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600;";
+            const enrollStatus = enrollmentMap[student.reg_no];
+            const status = enrollStatus || "Registered";
+            
+            let badgeBg = "#ef4444"; // Default fallback
+            if (status === "Registered") badgeBg = "#f59e0b"; // Yellow-orange
+            else if (status === "Pending") badgeBg = "#f59e0b"; // Orange
+            else if (status === "Enrolled") badgeBg = "#10b981"; // Emerald Green
+            else if (status === "In Progress") badgeBg = "#3b82f6"; // Blue
+            else if (status === "Completed") badgeBg = "#8b5cf6"; // Purple
+            else if (status === "Inactive") badgeBg = "#6b7280"; // Gray
+            
+            const badgeClass = `background: ${badgeBg}; color: white; padding: 4px 8px; border-radius: 8px; font-size: 11px; font-weight: 600; text-transform: capitalize;`;
             
             body.innerHTML += `
                 <tr>

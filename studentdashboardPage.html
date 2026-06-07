@@ -81,6 +81,24 @@
     border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
+.status-in-progress {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.status-completed {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.status-inactive {
+    background: rgba(107, 114, 128, 0.15);
+    color: #6b7280;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
 .student-meta-details {
     display: flex;
     gap: 15px;
@@ -722,9 +740,27 @@ async function checkEnrollmentStatus() {
                 studentNameHeader.innerText = student.student_name || username;
             }
             if (badgeContainer) {
+                const status = student.enrollment_status || "Enrolled";
+                let statusClass = "status-enrolled";
+                let iconClass = "fa-solid fa-circle-check";
+                
+                if (status === "Pending") {
+                    statusClass = "status-pending";
+                    iconClass = "fa-solid fa-clock";
+                } else if (status === "In Progress") {
+                    statusClass = "status-in-progress";
+                    iconClass = "fa-solid fa-spinner fa-spin";
+                } else if (status === "Completed") {
+                    statusClass = "status-completed";
+                    iconClass = "fa-solid fa-graduation-cap";
+                } else if (status === "Inactive") {
+                    statusClass = "status-inactive";
+                    iconClass = "fa-solid fa-circle-xmark";
+                }
+
                 badgeContainer.innerHTML = `
-                    <span class="status-badge status-enrolled">
-                        <i class="fa-solid fa-circle-check" style="margin-right: 6px;"></i>Enrolled
+                    <span class="status-badge ${statusClass}">
+                        <i class="${iconClass}" style="margin-right: 6px;"></i>${status}
                     </span>
                 `;
             }

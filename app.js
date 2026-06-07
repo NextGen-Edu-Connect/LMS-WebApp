@@ -4,16 +4,16 @@ const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
 
 window.onload = function () 
 {
-    loadCoursesDropdown();
-    loadUsers();
-    loadCoursesTable();
-    loadVideosTable();
-    loadQuizDropdown();
-    loadQuizTable();
-    loadCollegeTable();
-    loadmailIdDropdown();
-    loadCollegeDropdown();
-    loadStudentEnrollmentTable();
+    if (document.getElementById("videoCourse")) loadCoursesDropdown();
+    if (document.getElementById("usersBody")) loadUsers();
+    if (document.getElementById("coursesBody")) loadCoursesTable();
+    if (document.getElementById("videosBody")) loadVideosTable();
+    if (document.getElementById("quizIdDropDown")) loadQuizDropdown();
+    if (document.getElementById("quizBody")) loadQuizTable();
+    if (document.getElementById("collegeBody")) loadCollegeTable();
+    if (document.getElementById("mailIdDropDown")) loadmailIdDropdown();
+    if (document.getElementById("collegeDropDown")) loadCollegeDropdown();
+    if (document.getElementById("studentEnrollmentBody")) loadStudentEnrollmentTable();
 };
 
 window.showPage = function(pageId,element)
@@ -1034,12 +1034,19 @@ async function deleteCollege(id)
 /* STUDENT ENROLLMENT */
 
 window.doEnrollment = async function ()
- {
+{
+    const mailIdEl = document.getElementById("mailIdDropDown");
+    const nameEl = document.getElementById("studentName");
+    const regNoEl = document.getElementById("studentRegNo");
+    const collegeEl = document.getElementById("collegeDropDown");
 
-    const mail_id = document.getElementById("mailIdDropDown").value;
-    const student_name = document.getElementById("studentName").value;
-    const student_regno = document.getElementById("studentRegNo").value;
-    const college_name = document.getElementById("collegeDropDown").value;
+    if (!mailIdEl || !nameEl || !regNoEl || !collegeEl) return;
+
+    const mail_id = mailIdEl.value;
+    const student_name = nameEl.value;
+    const reg_no = regNoEl.value;
+    const college_name = collegeEl.value;
+    
     const { error } =
         await client
             .from("studentenrollment")
@@ -1047,14 +1054,13 @@ window.doEnrollment = async function ()
                 {
                     mail_id,
                     student_name,
-                    student_regno,
+                    reg_no,
                     college_name
                 }
             ]);
 
     if (error) 
     {
-
         alert(error.message);            
         return;
     }
@@ -1062,20 +1068,20 @@ window.doEnrollment = async function ()
     alert("Student enrollment completed Successfully");
 
     /* CLEAR FIELDS */
-
-    document.getElementById("mailIdDropDown").selectedIndex=0;
-    document.getElementById("studentName").value="";
-    document.getElementById("studentRegNo").value="";
-    document.getElementById("collegeDropDown").selectedIndex=0;
+    mailIdEl.selectedIndex = 0;
+    nameEl.value = "";
+    regNoEl.value = "";
+    collegeEl.selectedIndex = 0;
 };
 
 async function loadmailIdDropdown()
 {
     const dropdown = document.getElementById("mailIdDropDown");
+    if (!dropdown) return;
     dropdown.innerHTML = "";
 
     // Get enrolled mail ids
-    const {data: enrolled,error: enrollError} = await client.from("studentenrollment").select("mail_id");
+    const {data: enrolled, error: enrollError} = await client.from("studentenrollment").select("mail_id");
 
     if (enrollError) 
     {
@@ -1083,38 +1089,40 @@ async function loadmailIdDropdown()
         return;
     }
 
-    const enrolledMails =enrolled.map( x => x.mail_id);
+    const enrolledMails = enrolled.map(x => x.mail_id);
 
-// Get only NOT enrolled students
-    const {data,error} = await client.from("login").select("username").eq("role", "Student")
-    .not(
-        "username",
-        "in",
-        `(${enrolledMails
-            .map(m => `"${m}"`)
-            .join(",")})`
-    );
+    // Get only NOT enrolled students
+    const {data, error} = await client.from("login").select("username").eq("role", "Student")
+        .not(
+            "username",
+            "in",
+            `(${enrolledMails
+                .map(m => `"${m}"`)
+                .join(",")})`
+        );
 
-if (error) 
+    if (error) 
     {
-    alert(error.message);
-    return;
-}
-dropdown.innerHTML =`<option value="">Select Student</option>`;
-// Fill dropdown
-data.forEach(student => {
-    dropdown.innerHTML += `
-        <option value="${student.username}">
-            ${student.username}
-        </option>
-    `;
-});
+        alert(error.message);
+        return;
+    }
+    dropdown.innerHTML = `<option value="">Select Student</option>`;
+    // Fill dropdown
+    data.forEach(student => {
+        dropdown.innerHTML += `
+            <option value="${student.username}">
+                ${student.username}
+            </option>
+        `;
+    });
 }
 
 async function loadCollegeDropdown()
 {
-    const dropdown =document.getElementById("collegeDropDown");
+    const dropdown = document.getElementById("collegeDropDown");
+    if (!dropdown) return;
     dropdown.innerHTML = "";
+    
     const { data, error } = await client.from("colleges").select("college_name");
     if (error)
     {
@@ -1122,14 +1130,13 @@ async function loadCollegeDropdown()
         return;
     }
 
-    dropdown.innerHTML =`<option value="">Select College</option>`;
+    dropdown.innerHTML = `<option value="">Select College</option>`;
     data.forEach(colleges =>
     {
         if (colleges.college_name)
         {
             dropdown.innerHTML += `
-                <option
-                    value="${colleges.college_name}">
+                <option value="${colleges.college_name}">
                     ${colleges.college_name}
                 </option>
             `;
@@ -1141,40 +1148,52 @@ async function loadCollegeDropdown()
 
 async function loadStudentEnrollmentTable() 
 {
-    const { data } =await client.from("studentenrollment").select("*");
     const body = document.getElementById("studentEnrollmentBody");
+    if (!body) return;
     body.innerHTML = "";
-    data.forEach(q => {
-        body.innerHTML += `
-            <tr>
-                <td>
-                    ${q.student_name}
-                </td>
-                <td>
-                    ${q.mail_id}
-                </td>
-                <td>
-                    <button
-                        class="action-btn edit-btn"
-                        onclick="openStudentEnrollmentModal('${q.id}')">
-                        Edit
-                    </button>
-                    <button
-                        class="action-btn delete-btn"
-                        onclick="deleteStudentEnrollment('${q.id}')">
-                        Delete
-                    </button>
-                </td>
 
-            </tr>
-        `;
-    });
+    const { data } = await client.from("studentenrollment").select("*");
+    if (data) {
+        data.forEach(q => {
+            body.innerHTML += `
+                <tr>
+                    <td>
+                        ${q.student_name}
+                    </td>
+                    <td>
+                        ${q.mail_id}
+                    </td>
+                    <td>
+                        <button
+                            class="action-btn edit-btn"
+                            onclick="openStudentEnrollmentModal('${q.id}')">
+                            Edit
+                        </button>
+                        <button
+                            class="action-btn delete-btn"
+                            onclick="deleteStudentEnrollment('${q.id}')">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
 }
 
-window.openStudentEnrollmentModal =async function (id)
+window.openStudentEnrollmentModal = async function (id)
 {
+    const modal = document.getElementById("editStudentEnrollmentModal");
+    const dropdown = document.getElementById("editCollageNameDropDown");
+    const idEl = document.getElementById("editStudentEnrollmentId");
+    const mailEl = document.getElementById("editStudentMailID");
+    const nameEl = document.getElementById("editStudentName");
+    const regNoEl = document.getElementById("editStudentRegNo");
+
+    if (!modal || !dropdown || !idEl || !mailEl || !nameEl || !regNoEl) return;
+
     // Get selected enrollment
-    const {data,error } = await client.from("studentenrollment").select("*").eq("id", id).single();
+    const {data, error } = await client.from("studentenrollment").select("*").eq("id", id).single();
 
     if (error)
     {
@@ -1183,15 +1202,13 @@ window.openStudentEnrollmentModal =async function (id)
     }
 
     // Get colleges
-    const {data: colleges,error: collegeError} = await client.from("colleges").select("*");
+    const {data: colleges, error: collegeError} = await client.from("colleges").select("*");
 
     if (collegeError)
     {
         alert(collegeError.message);
         return;
     }
-
-    const dropdown = document.getElementById("editCollageNameDropDown");
 
     dropdown.innerHTML = "";
 
@@ -1200,38 +1217,43 @@ window.openStudentEnrollmentModal =async function (id)
         if (college.college_name)
         {
             dropdown.innerHTML += `
-                <option
-                    value="${college.college_name}">
+                <option value="${college.college_name}">
                     ${college.college_name}
                 </option>
             `;
         }
     });
 
-    // Set selected college
-    dropdown.value = data.student_college_name;
-    // Fill fields
-    document.getElementById("editStudentEnrollmentId").value = data.id;
-    document.getElementById("editStudentMailID").value = data.mail_id;
-    document.getElementById("editStudentName").value = data.student_name;
-    document.getElementById("editStudentRegNo").value = data.student_regno;
+    // Set selected college and fill fields
+    dropdown.value = data.college_name || "";
+    idEl.value = data.id;
+    mailEl.value = data.mail_id;
+    nameEl.value = data.student_name;
+    regNoEl.value = data.reg_no;
 
     // Open modal
-    document.getElementById("editStudentEnrollmentModal").classList.add("show");
+    modal.classList.add("show");
 };
 
 
 /* EDIT STUDENT ENROLLMENT*/
 
-window.updateStudentEnrollment =async function (id) 
+window.updateStudentEnrollment = async function (id) 
 {
-    const student_enrollmentID=document.getElementById("editStudentEnrollmentId").value;
-    const student_name = document.getElementById("editStudentName").value;
-    const student_regno =document.getElementById("editStudentRegNo").value;
-    const student_college_name =document.getElementById("editCollageNameDropDown").value;
+    const idEl = document.getElementById("editStudentEnrollmentId");
+    const nameEl = document.getElementById("editStudentName");
+    const regNoEl = document.getElementById("editStudentRegNo");
+    const collegeEl = document.getElementById("editCollageNameDropDown");
+
+    if (!idEl || !nameEl || !regNoEl || !collegeEl) return;
+
+    const student_enrollmentID = idEl.value;
+    const student_name = nameEl.value;
+    const reg_no = regNoEl.value;
+    const college_name = collegeEl.value;
     
-    let updateData = {student_name,student_regno,student_college_name};
-    const { error } =await client.from("studentenrollment").update(updateData).eq("id", student_enrollmentID);
+    let updateData = { student_name, reg_no, college_name };
+    const { error } = await client.from("studentenrollment").update(updateData).eq("id", student_enrollmentID);
     if (error)
     {
         alert(error.message );
@@ -1244,21 +1266,21 @@ window.updateStudentEnrollment =async function (id)
 
 function closeStudentEnrollmentModal()
 {
-    //document.getElementById("editQuizModal").style.display = "none";
-    document.getElementById("editStudentEnrollmentModal").classList.remove("show");
+    const modal = document.getElementById("editStudentEnrollmentModal");
+    if (modal) modal.classList.remove("show");
 }
 
 
 async function deleteStudentEnrollment(id)
 {
-    const confirmDelete =confirm("Are you sure want to delete this student enrollment?" );
+    const confirmDelete = confirm("Are you sure want to delete this student enrollment?" );
     if (!confirmDelete)
     {
         return;
     }
     
     // Delete DB record
-    const { error } =await client.from("studentenrollment").delete().eq("id", id);
+    const { error } = await client.from("studentenrollment").delete().eq("id", id);
     if (error)
     {
        alert(error.message);

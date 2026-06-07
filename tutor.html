@@ -1815,7 +1815,9 @@
                 <div class="form-group" style="margin-bottom: 24px;">
                     <label for="progressCourseStatus">Course Status</label>
                     <select id="progressCourseStatus" onchange="updateStudentStatusFromModal()">
-                        <option value="Active">Active</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Enrolled">Enrolled</option>
+                        <option value="In Progress">In Progress</option>
                         <option value="Completed">Completed</option>
                         <option value="Inactive">Inactive</option>
                     </select>
@@ -1892,6 +1894,41 @@
                 <button class="btn-submit" style="width: auto; padding: 10px 24px;" onclick="submitAssignmentDecision('Approved')">
                     <i class="fa-solid fa-check-circle"></i> Approve Submission
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CONFIRM ENROLLMENT -->
+    <div class="modal-overlay" id="confirmEnrollmentModal">
+        <div class="modal-box">
+            <div class="modal-header-nav">
+                <h3>Confirm Student Enrollment</h3>
+                <button class="modal-close-btn" onclick="closeModal('confirmEnrollmentModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: var(--text-secondary);">Please review the student's details before finalizing the enrollment:</p>
+                <div class="score-list">
+                    <div class="score-item">
+                        <span class="score-item-title">Student Name</span>
+                        <span class="score-item-value" id="confStudentName">-</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-item-title">Register Number</span>
+                        <span class="score-item-value" id="confRegNo">-</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-item-title">Email Address</span>
+                        <span class="score-item-value" id="confEmail">-</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-item-title">Course</span>
+                        <span class="score-item-value" id="confCourse" style="color: var(--accent-blue); font-weight: 600;">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="pagination-btn" onclick="closeModal('confirmEnrollmentModal')">Cancel</button>
+                <button class="btn-submit" style="width: auto; padding: 10px 24px;" onclick="executeEnrollment()">Confirm & Enroll</button>
             </div>
         </div>
     </div>
@@ -2697,18 +2734,33 @@
             openModal("viewProgressModal");
         }
 
-        function updateStudentStatusFromModal() {
+        async function updateStudentStatusFromModal() {
             const newStatus = document.getElementById("progressCourseStatus").value;
             const student = studentsData.find(s => s.regNo === currentProgressStudentId);
             if (student) {
                 student.status = newStatus;
+                student.enrollmentStatus = newStatus;
                 
-                // Add timeline activity
-                addActivityLog('module', 'Status Changed', `${student.name} course status updated to ${newStatus}.`);
-                
-                localStorage.setItem("tutor_students_ext", JSON.stringify(studentsData));
-                renderAllData();
-                showToast("Course status updated successfully.", "success");
+                try {
+                    // Update database if it is not a local/mock record
+                    if (student.id && !student.id.toString().startsWith('mock') && !student.id.toString().startsWith('local')) {
+                        const { error } = await dbClient
+                            .from("studentenrollment")
+                            .update({ enrollment_status: newStatus })
+                            .eq("id", student.id);
+                        if (error) throw error;
+                    }
+                    
+                    // Add timeline activity
+                    addActivityLog('module', 'Status Changed', `${student.name} course status updated to ${newStatus}.`);
+                    
+                    localStorage.setItem("tutor_students_ext", JSON.stringify(studentsData));
+                    renderAllData();
+                    showToast("Course status updated successfully.", "success");
+                } catch(err) {
+                    console.error("Failed to update status in Supabase:", err);
+                    showToast("Failed to update status in database: " + (err.message || err), "error");
+                }
             }
         }
 
@@ -2801,21 +2853,72 @@
         async function handleEnrollmentSubmit(e) {
             e.preventDefault();
             
-            const regNo = document.getElementById("enrollRegNo").value;
-            const name = document.getElementById("enrollName").value;
-            const mail = document.getElementById("enrollMail").value;
-            const phone = document.getElementById("enrollPhone").value;
+            const regNo = document.getElementById("enrollRegNo").value.trim();
+            const name = document.getElementById("enrollName").value.trim();
+            const mail = document.getElementById("enrollMail").value.trim();
+            const phone = document.getElementById("enrollPhone").value.trim();
             const gender = document.getElementById("enrollGender").value;
-            const dept = document.getElementById("enrollDept").value;
-            const college = document.getElementById("enrollCollege").value;
-            const collegeCode = document.getElementById("enrollCollegeCode").value;
-            const district = document.getElementById("enrollDistrict").value;
-            const university = document.getElementById("enrollUniversity").value;
+            const dept = document.getElementById("enrollDept").value.trim();
+            const college = document.getElementById("enrollCollege").value.trim();
+            const collegeCode = document.getElementById("enrollCollegeCode").value.trim();
+            const district = document.getElementById("enrollDistrict").value.trim();
+            const university = document.getElementById("enrollUniversity").value.trim();
             const course = document.getElementById("enrollCourse").value;
             
             if (!regNo || !name || !mail || !course) {
                 showToast("Please fill all required fields.", "error");
                 return;
+            }
+
+            // Email format validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(mail)) {
+                showToast("Please enter a valid email address.", "error");
+                return;
+            }
+
+            // Phone length/digits validation
+            if (phone) {
+                const phoneRegex = /^\+?[0-9]{10,15}$/;
+                if (!phoneRegex.test(phone)) {
+                    showToast("Phone number must be between 10 and 15 digits (optional leading +).", "error");
+                    return;
+                }
+            }
+
+            // Uniqueness check: check local state
+            if (studentsData.some(s => s.regNo === regNo)) {
+                showToast("This Register Number is already enrolled in the roster.", "error");
+                return;
+            }
+            if (studentsData.some(s => s.email.toLowerCase() === mail.toLowerCase())) {
+                showToast("This Email Address is already enrolled in the roster.", "error");
+                return;
+            }
+
+            showToast("Verifying registration details...", "info");
+
+            // Uniqueness check: check database
+            try {
+                const { data: dupReg, error: errReg } = await dbClient
+                    .from("studentenrollment")
+                    .select("id")
+                    .eq("reg_no", regNo);
+                if (dupReg && dupReg.length > 0) {
+                    showToast("Register Number is already enrolled in database.", "error");
+                    return;
+                }
+
+                const { data: dupEmail, error: errEmail } = await dbClient
+                    .from("studentenrollment")
+                    .select("id")
+                    .eq("mail_id", mail);
+                if (dupEmail && dupEmail.length > 0) {
+                    showToast("Email address is already enrolled in database.", "error");
+                    return;
+                }
+            } catch(err) {
+                console.error("Database validation failed:", err);
             }
             
             pendingEnrollmentData = {
@@ -2960,8 +3063,16 @@
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-                    if (jsonData.length === 0) {
-                        showToast("The Excel file is empty.", "error");
+                    // Filter out completely empty rows
+                    const activeRows = jsonData.filter(row => {
+                        const name = row.student_name || row.Name || "";
+                        const regNo = (row.reg_no || row.RegNo || "").toString().trim();
+                        const email = (row.mail_id || row.Email || "").toString().trim();
+                        return !!(name || regNo || email);
+                    });
+
+                    if (activeRows.length === 0) {
+                        showToast("The Excel file has no valid student rows.", "error");
                         return;
                     }
 
@@ -2971,13 +3082,13 @@
                     const dbEmails = dbEnrollments ? dbEnrollments.map(item => item.mail_id) : [];
 
                     excelParsedRecords = [];
-                    validationSummary = { total: jsonData.length, valid: 0, errors: 0 };
+                    validationSummary = { total: activeRows.length, valid: 0, errors: 0 };
 
                     const regNoCountsInFile = {};
                     const emailCountsInFile = {};
 
                     // First pass: count occurrences in file for file-level duplicate detection
-                    jsonData.forEach(row => {
+                    activeRows.forEach(row => {
                         const regNo = (row.reg_no || row.RegNo || "").toString().trim();
                         const email = (row.mail_id || row.Email || "").toString().trim();
                         if (regNo) regNoCountsInFile[regNo] = (regNoCountsInFile[regNo] || 0) + 1;
@@ -2985,7 +3096,7 @@
                     });
 
                     // Second pass: validate each record
-                    jsonData.forEach((row, idx) => {
+                    activeRows.forEach((row, idx) => {
                         const name = row.student_name || row.Name || "";
                         const regNo = (row.reg_no || row.RegNo || "").toString().trim();
                         const email = (row.mail_id || row.Email || "").toString().trim();
@@ -3002,6 +3113,22 @@
                         if (!name) errors.push("Missing Student Name");
                         if (!regNo) errors.push("Missing Register Number");
                         if (!email) errors.push("Missing Email ID");
+
+                        // Email format validation
+                        if (email) {
+                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                            if (!emailRegex.test(email)) {
+                                errors.push("Invalid Email Address format");
+                            }
+                        }
+
+                        // Phone number length validation
+                        if (phone) {
+                            const phoneRegex = /^\+?[0-9]{10,15}$/;
+                            if (!phoneRegex.test(phone.toString().trim())) {
+                                errors.push("Phone must be 10-15 digits");
+                            }
+                        }
 
                         if (regNo) {
                             if (regNoCountsInFile[regNo] > 1) {
@@ -3101,9 +3228,55 @@
             let successCount = 0;
             const tutorUsername = localStorage.getItem("user") || "NEC Tutor";
 
+            // Fetch existing login usernames to avoid duplicates
+            let dbUsernames = [];
+            try {
+                const { data: dbLogins, error: loginErr } = await dbClient.from("login").select("username");
+                if (dbLogins) {
+                    dbUsernames = dbLogins.map(item => item.username);
+                }
+            } catch (err) {
+                console.error("Failed to fetch login usernames:", err);
+            }
+
             for (const record of validRecords) {
                 try {
-                    // 1. Insert into Supabase table studentenrollment
+                    // 1. Auto-provision login account in Supabase login table if it doesn't exist
+                    if (!dbUsernames.includes(record.regNo)) {
+                        const { error: loginInsertErr } = await dbClient.from("login").insert([{
+                            username: record.regNo,
+                            password: record.regNo, // password defaults to Register Number
+                            role: "Student"
+                        }]);
+                        if (loginInsertErr) {
+                            console.error(`Failed to insert login for student ${record.regNo}:`, loginInsertErr);
+                        } else {
+                            dbUsernames.push(record.regNo);
+                        }
+                    }
+
+                    // Also provision profile in localStorage registered_students if missing
+                    let registered = JSON.parse(localStorage.getItem("registered_students")) || [];
+                    if (!registered.some(s => s.reg_no === record.regNo)) {
+                        registered.push({
+                            reg_no: record.regNo,
+                            dob: record.regNo, // default DOB
+                            student_name: record.name,
+                            mail_id: record.email,
+                            phone_no: record.phone || "",
+                            gender: record.gender || "Male",
+                            department: record.dept || "",
+                            college_name: record.college || "",
+                            college_code: record.collegeCode || "",
+                            district: record.district || "",
+                            university: record.university || "",
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        });
+                        localStorage.setItem("registered_students", JSON.stringify(registered));
+                    }
+
+                    // 2. Insert into Supabase table studentenrollment
                     const { data, error } = await dbClient.from("studentenrollment").insert([{
                         student_name: record.name,
                         reg_no: record.regNo,
@@ -3123,7 +3296,7 @@
 
                     const studentId = (data && data.length > 0) ? data[0].id : 'local_' + Date.now() + Math.random().toString(36).slice(2, 6);
 
-                    // 2. Add to Local Storage studentsData list
+                    // 3. Add to Local Storage studentsData list
                     const newStudent = {
                         id: studentId,
                         name: record.name,
@@ -3193,7 +3366,7 @@
             await loadRegisteredStudentsDropdown();
             renderAllData();
 
-            showToast(`Successfully enrolled ${successCount} students!`, "success");
+            showToast(`Successfully enrolled ${successCount} students! Login passwords set to their Register Numbers.`, "success");
             navigate('trackingPage', document.querySelectorAll('.menu-item')[3]); // Navigate to student tracking
         }
 
@@ -3343,70 +3516,6 @@
             }
         }
     </script>
-    <!-- Hidden dummy container to prevent app.js from throwing console errors when Supabase connection succeeds -->
-    <div id="supabase-dummy-elements" style="display: none;">
-        <select id="videoCourse"></select>
-        <tbody id="usersBody"></tbody>
-        <tbody id="coursesBody"></tbody>
-        <tbody id="videosBody"></tbody>
-        <select id="quizIdDropDown"></select>
-        <tbody id="quizBody"></tbody>
-        <tbody id="collegeBody"></tbody>
-        <select id="mailIdDropDown"></select>
-        <select id="collegeDropDown"></select>
-        <tbody id="studentEnrollmentBody"></tbody>
-        
-        <div id="editUserModal"></div>
-        <input id="editUserId">
-        <input id="editUsername">
-        <input id="editPassword">
-        <input id="editRole">
-        <div id="editCourseModal"></div>
-        <input id="editCourseId">
-        <input id="editCourseName">
-        <input id="editCourseDescription">
-        <img id="previewThumbnail">
-        <input id="editCourseThumbnail" type="file">
-        <input id="moduleName">
-        <input id="videoTitle">
-        <input id="videoFile" type="file">
-        <input id="quizId">
-        <div id="editVideoModal"></div>
-        <select id="editVideoCourse"></select>
-        <input id="editVideoId">
-        <input id="editModuleName">
-        <input id="editVideoTitle">
-        <input id="editvideoURL">
-        <input id="editVideoFile" type="file">
-        <textarea id="question"></textarea>
-        <input id="option1">
-        <input id="option2">
-        <input id="option3">
-        <input id="option4">
-        <input id="correctAnswer">
-        <input id="editQuizId">
-        <input id="editId">
-        <input id="editQuestion">
-        <input id="editOption1">
-        <input id="editOption2">
-        <input id="editOption3">
-        <input id="editOption4">
-        <input id="editAnswer">
-        <div id="editQuizModal"></div>
-        <input id="college_name">
-        <input id="place">
-        <input id="editCollegeId">
-        <input id="editCollegeName">
-        <input id="editPlace">
-        <div id="editCollegeModal"></div>
-        <div id="adminMsg"></div>
-        <div id="editStudentEnrollmentModal"></div>
-        <input id="editStudentEnrollmentId">
-        <textarea id="editStudentMailID"></textarea>
-        <textarea id="editStudentName"></textarea>
-        <textarea id="editStudentRegNo"></textarea>
-        <select id="editCollageNameDropDown"></select>
-    </div>
 </body>
 
 </html>
