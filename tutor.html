@@ -1583,7 +1583,9 @@
                             
                             <div class="form-group">
                                 <label for="enrollCollege">College Name</label>
-                                <input type="text" id="enrollCollege" placeholder="College Name">
+                                <select id="enrollCollege" onchange="handleCollegeSelect(this.value)">
+                                    <option value="">Select College</option>
+                                </select>
                             </div>
                             
                             <div class="form-group">
@@ -1967,6 +1969,7 @@
         let studentsData = [];
         let coursesList = [];
         let collegesList = [];
+        let rawCollegesList = [];
         let assignmentReviews = [];
         let activityLogs = [];
         let studentProfilesList = [];
@@ -2050,7 +2053,8 @@
         async function fetchSupabaseBaseData() {
             try {
                 // Colleges dropdown
-                const { data: colleges, error: colErr } = await dbClient.from("colleges").select("college_name");
+                const { data: colleges, error: colErr } = await dbClient.from("colleges").select("college_name, college_code, place");
+                rawCollegesList = colleges || [];
                 collegesList = colleges ? colleges.map(c => c.college_name) : [];
                 
                 // Courses dropdown
@@ -2068,16 +2072,22 @@
             const courseSelect = document.getElementById("enrollCourse");
             const bulkCourseSelect = document.getElementById("bulkEnrollCourse");
             const filterCourseSelect = document.getElementById("trackCourseFilter");
+            const collegeSelect = document.getElementById("enrollCollege");
 
             if (courseSelect) courseSelect.innerHTML = '<option value="">Select Course</option>';
             if (bulkCourseSelect) bulkCourseSelect.innerHTML = '<option value="">Select Course</option>';
             if (filterCourseSelect) filterCourseSelect.innerHTML = '<option value="">All Courses</option>';
+            if (collegeSelect) collegeSelect.innerHTML = '<option value="">Select College</option>';
 
             coursesList.forEach(course => {
                 const name = course.course_name;
                 if (courseSelect) courseSelect.innerHTML += `<option value="${name}">${name}</option>`;
                 if (bulkCourseSelect) bulkCourseSelect.innerHTML += `<option value="${name}">${name}</option>`;
                 if (filterCourseSelect) filterCourseSelect.innerHTML += `<option value="${name}">${name}</option>`;
+            });
+
+            collegesList.forEach(colName => {
+                if (collegeSelect) collegeSelect.innerHTML += `<option value="${colName}">${colName}</option>`;
             });
         }
 
@@ -2096,7 +2106,7 @@
                 if (selectElement) {
                     selectElement.innerHTML = '<option value="">Select Student (Register Number)</option>';
                     studentProfilesList.forEach(student => {
-                        selectElement.innerHTML += `<option value="${student.reg_no}">${student.reg_no} - ${student.student_name} (${student.mail_id} | ${student.department || 'No Dept'} | ${student.college_name || 'No College'})</option>`;
+                        selectElement.innerHTML += `<option value="${student.reg_no}">${student.reg_no} - ${student.student_name}</option>`;
                     });
                 }
             } catch(err) {
@@ -2526,10 +2536,10 @@
                 document.getElementById("statEnrolledStudents").innerText = studentsData.length;
             }
             if (document.getElementById("statCompletedCourses")) {
-                document.getElementById("statCompletedCourses").innerText = studentsData.filter(s => s.course_completed === 'Yes').length;
+                document.getElementById("statCompletedCourses").innerText = studentsData.filter(s => s.course_completed === 'Yes' || s.course_completed === true).length;
             }
             if (document.getElementById("statCertificatesIssued")) {
-                document.getElementById("statCertificatesIssued").innerText = studentsData.filter(s => s.certificate_issued === 'Yes').length;
+                document.getElementById("statCertificatesIssued").innerText = studentsData.filter(s => s.certificate_issued === 'Yes' || s.certificate_issued === true).length;
             }
             if (document.getElementById("statPendingAssignments")) {
                 document.getElementById("statPendingAssignments").innerText = assignmentReviews.filter(a => a.status === 'Pending').length;
@@ -2736,8 +2746,8 @@
                             <td><span class="badge ${badgeClass}">${statusVal}</span></td>
                             <td><span style="font-weight:600; color:${student.overall_result === 'Pass' ? '#10b981' : '#f59e0b'}">${student.overall_result}</span></td>
                             <td>${student.mark_obtained !== null ? student.mark_obtained : 0}</td>
-                            <td>${student.course_completed || 'No'}</td>
-                            <td>${student.certificate_issued || 'No'}</td>
+                            <td>${student.course_completed === true || student.course_completed === 'Yes' ? 'Yes' : 'No'}</td>
+                            <td>${student.certificate_issued === true || student.certificate_issued === 'Yes' ? 'Yes' : 'No'}</td>
                             <td style="text-align: center; white-space: nowrap;">
                                 <button class="btn-submit" style="width: auto; padding: 6px 12px; font-size: 12px; border-radius: 8px; margin-right: 6px; background: rgba(37, 99, 235, 0.15); color: #3b82f6; border: 1px solid rgba(37, 99, 235, 0.3);" onclick="openProgressModal('${student.reg_no}', '${student.course_name}')">
                                     <i class="fa-solid fa-edit" style="margin-right: 4px;"></i> Update Status
@@ -3128,6 +3138,17 @@
             showToast(`Assignment ${status.toLowerCase()} successfully.`, "success");
         }
 
+        function handleCollegeSelect(collegeName) {
+            if (!collegeName) {
+                document.getElementById("enrollCollegeCode").value = "";
+                return;
+            }
+            const col = rawCollegesList.find(c => c.college_name === collegeName);
+            if (col) {
+                document.getElementById("enrollCollegeCode").value = col.college_code || "";
+            }
+        }
+
         // STUDENT MANUAL ENROLLMENT HANDLER
         let pendingEnrollmentData = null;
 
@@ -3275,11 +3296,12 @@
                     reg_no: d.regNo,
                     tutor_username: tutorUsername,
                     course_name: d.course,
-                    course_completed: "No",
+                    course_completed: false,
                     mark_obtained: 0,
                     overall_result: "In Progress",
-                    certificate_issued: "No",
-                    student_status: "Active"
+                    certificate_issued: false,
+                    student_status: "Enrolled",
+                    enrollment_status: "Enrolled"
                 }]).select();
                 
                 if (error) throw error;
@@ -3602,11 +3624,12 @@
                         student_name: record.name,
                         tutor_username: tutorUsername,
                         course_name: record.course,
-                        course_completed: "No",
+                        course_completed: false,
                         mark_obtained: 0,
                         overall_result: "In Progress",
-                        certificate_issued: "No",
-                        student_status: "Active"
+                        certificate_issued: false,
+                        student_status: "Enrolled",
+                        enrollment_status: "Enrolled"
                     }]).select();
 
                     if (error) throw error;
@@ -3713,8 +3736,8 @@
                 "Student Status": s.student_status,
                 "Overall Result": s.overall_result,
                 "Marks Obtained": s.mark_obtained !== null ? s.mark_obtained : 0,
-                "Course Completed": s.course_completed || 'No',
-                "Certificate Issued": s.certificate_issued || 'No'
+                "Course Completed": (s.course_completed === true || s.course_completed === 'Yes') ? 'Yes' : 'No',
+                "Certificate Issued": (s.certificate_issued === true || s.certificate_issued === 'Yes') ? 'Yes' : 'No'
             }));
 
             const worksheet = XLSX.utils.json_to_sheet(formattedRoster);
@@ -3743,7 +3766,7 @@
             doc.line(14, 34, 282, 34);
 
             const tableRows = studentsData.map(s => [
-                s.reg_no, s.student_name, s.course_name, s.tutor_username, s.student_status, s.overall_result, s.mark_obtained !== null ? s.mark_obtained : 0, s.course_completed || 'No', s.certificate_issued || 'No'
+                s.reg_no, s.student_name, s.course_name, s.tutor_username, s.student_status, s.overall_result, s.mark_obtained !== null ? s.mark_obtained : 0, (s.course_completed === true || s.course_completed === 'Yes') ? 'Yes' : 'No', (s.certificate_issued === true || s.certificate_issued === 'Yes') ? 'Yes' : 'No'
             ]);
 
             doc.autoTable({
