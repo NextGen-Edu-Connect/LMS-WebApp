@@ -1549,17 +1549,17 @@
                             
                             <div class="form-group">
                                 <label for="enrollName">Student Name *</label>
-                                <input type="text" id="enrollName" placeholder="Auto-populated" required readonly style="opacity: 0.8; background: rgba(255,255,255,0.03);">
+                                <input type="text" id="enrollName" placeholder="Student Name" required>
                             </div>
                             
                             <div class="form-group">
                                 <label for="enrollRegNo">Register Number *</label>
-                                <input type="text" id="enrollRegNo" placeholder="Auto-populated" required readonly style="opacity: 0.8; background: rgba(255,255,255,0.03);">
+                                <input type="text" id="enrollRegNo" placeholder="Register Number" required>
                             </div>
                             
                             <div class="form-group">
                                 <label for="enrollMail">Email Address *</label>
-                                <input type="email" id="enrollMail" placeholder="Auto-populated" required readonly style="opacity: 0.8; background: rgba(255,255,255,0.03);">
+                                <input type="email" id="enrollMail" placeholder="Email Address" required>
                             </div>
                             
                             <div class="form-group">
@@ -1963,7 +1963,7 @@
         // Supabase client initialization wrapper
         const supabaseUrl = "https://akodraeqesulsofaanna.supabase.co";
         const supabaseKey = "sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
-        const dbClient = window.client || client || supabase.createClient(supabaseUrl, supabaseKey);
+        const dbClient = window.client || (typeof client !== 'undefined' ? client : null) || supabase.createClient(supabaseUrl, supabaseKey);
 
         // State Manager
         let studentsData = [];
