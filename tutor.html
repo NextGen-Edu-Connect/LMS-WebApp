@@ -1619,73 +1619,124 @@
 
             <!-- BULK ENROLLMENT PAGE -->
             <section class="page" id="bulkPage">
-                <div class="bulk-card">
-                    <div class="form-header">
-                        <h2>Bulk Student Import</h2>
-                        <p>Upload an Excel spreadsheet (.xlsx) with student records to enroll multiple students at once.</p>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 24px; max-width: 400px;">
-                        <label for="bulkEnrollCourse" style="font-weight: 600; font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 8px;">Select Course for Enrollment *</label>
-                        <select id="bulkEnrollCourse" required>
-                            <option value="">Select Course</option>
-                        </select>
+                <div class="bulk-card" style="padding: 24px;">
+                    <div class="form-header" style="margin-bottom: 24px;">
+                        <h2>Bulk Student Enrollment</h2>
+                        <p>Select students from the database and assign them to a course in bulk.</p>
                     </div>
 
-                    <div class="upload-zone" onclick="document.getElementById('excelFileInput').click()">
-                        <i class="fa-solid fa-file-excel"></i>
-                        <h3>Drag & Drop Excel File here or Click to Browse</h3>
-                        <p>Accepts only .xlsx spreadsheet files. Make sure columns match the template exactly.</p>
-                        <input type="file" id="excelFileInput" accept=".xlsx" style="display: none;" onchange="handleExcelUpload(event)">
-                    </div>
-
-                    <div class="upload-actions" style="margin-top: 20px;">
-                        <button class="bulk-download-btn" onclick="downloadSampleTemplate()">
-                            <i class="fa-solid fa-download"></i> Download Excel Template (.xlsx)
-                        </button>
-                        <button class="btn-submit" id="btnImportExcel" style="width: auto; padding: 10px 24px; display: none;" onclick="processBulkImport()">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> Import <span id="importCount">0</span> Students
-                        </button>
-                    </div>
-
-                    <!-- Validation Summary Banner -->
-                    <div id="bulkSummarySection" style="display: none; margin-top: 24px; margin-bottom: 20px;">
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px;">
-                            <div class="stat-card" style="padding: 15px; border-radius: 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.15);">
-                                <h4 style="font-size: 12px; color: var(--text-secondary);">Total Records</h4>
-                                <p id="summaryTotal" style="font-size: 22px; font-weight: 700; margin-top: 5px; color: var(--text-primary);">0</p>
-                            </div>
-                            <div class="stat-card" style="padding: 15px; border-radius: 12px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.15);">
-                                <h4 style="font-size: 12px; color: var(--text-secondary);">Valid to Import</h4>
-                                <p id="summaryValid" style="font-size: 22px; font-weight: 700; margin-top: 5px; color: #10b981;">0</p>
-                            </div>
-                            <div class="stat-card" style="padding: 15px; border-radius: 12px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15);">
-                                <h4 style="font-size: 12px; color: var(--text-secondary);">Validation Errors</h4>
-                                <p id="summaryErrors" style="font-size: 22px; font-weight: 700; margin-top: 5px; color: #ef4444;">0</p>
-                            </div>
+                    <!-- Summary Cards -->
+                    <div id="bulkSummaryStats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 24px;">
+                        <div class="stat-card" style="padding: 15px; border-radius: 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.15);">
+                            <h4 style="font-size: 13px; color: var(--text-secondary);">Total Available Students</h4>
+                            <p id="statTotalAvailable" style="font-size: 24px; font-weight: 700; margin-top: 8px; color: var(--text-primary);">0</p>
+                        </div>
+                        <div class="stat-card" style="padding: 15px; border-radius: 12px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.15);">
+                            <h4 style="font-size: 13px; color: var(--text-secondary);">Selected Students</h4>
+                            <p id="statSelected" style="font-size: 24px; font-weight: 700; margin-top: 8px; color: #10b981;">0</p>
+                        </div>
+                        <div class="stat-card" style="padding: 15px; border-radius: 12px; background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.15);">
+                            <h4 style="font-size: 13px; color: var(--text-secondary);">Filtered Students</h4>
+                            <p id="statFiltered" style="font-size: 24px; font-weight: 700; margin-top: 8px; color: #8b5cf6;">0</p>
+                        </div>
+                        <div class="stat-card" style="padding: 15px; border-radius: 12px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.15);">
+                            <h4 style="font-size: 13px; color: var(--text-secondary);">Enrolled Students</h4>
+                            <p id="statEnrolled" style="font-size: 24px; font-weight: 700; margin-top: 8px; color: #ef4444;">0</p>
                         </div>
                     </div>
 
-                    <div id="excelPreviewSection" style="display: none; margin-top: 20px;">
-                        <h3 style="font-family: var(--font-display); margin-bottom: 12px; font-size: 16px;">Excel Data Preview & Validation</h3>
-                        <div class="table-responsive-wrapper">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Student Name</th>
-                                        <th>Register No</th>
-                                        <th>Email</th>
-                                        <th>College Name</th>
-                                        <th>Department</th>
-                                        <th>Validation Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="excelPreviewBody">
-                                    <!-- Dynamic preview rows -->
-                                </tbody>
-                            </table>
+                    <!-- Filters Section -->
+                    <div class="filters-section" style="display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 24px; padding: 20px; background: var(--bg-secondary); border-radius: 12px; position: sticky; top: 0; z-index: 10; border: 1px solid var(--border-color); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                            <label style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: block;"><i class="fa-solid fa-building-columns" style="margin-right: 6px; color: var(--accent-blue);"></i>College Name</label>
+                            <select id="bulkFilterCollege" onchange="renderBulkStudentTable()" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); width: 100%; transition: all 0.2s ease;">
+                                <option value="">All Colleges</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                            <label style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: block;"><i class="fa-solid fa-layer-group" style="margin-right: 6px; color: var(--accent-blue);"></i>Department</label>
+                            <select id="bulkFilterDept" onchange="renderBulkStudentTable()" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); width: 100%; transition: all 0.2s ease;">
+                                <option value="">All Departments</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                            <label style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: block;"><i class="fa-solid fa-map-location-dot" style="margin-right: 6px; color: var(--accent-blue);"></i>District</label>
+                            <select id="bulkFilterDistrict" onchange="renderBulkStudentTable()" style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); width: 100%; transition: all 0.2s ease;">
+                                <option value="">All Districts</option>
+                            </select>
                         </div>
                     </div>
+
+                    <!-- Action Section -->
+                    <div style="display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin-bottom: 20px;">
+                        <div class="form-group" style="flex: 1; max-width: 300px; margin-bottom: 0;">
+                            <label for="bulkEnrollCourse" style="font-weight: 600; font-size: 13px; color: var(--text-primary); display: block; margin-bottom: 8px;">Select Course for Enrollment *</label>
+                            <select id="bulkEnrollCourse" required style="padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); width: 100%;">
+                                <option value="">Select Course</option>
+                            </select>
+                        </div>
+                        <button class="btn-submit" onclick="processNewBulkEnrollment()" style="width: auto; padding: 10px 24px; border-radius: 8px; font-weight: 600;">
+                            <i class="fa-solid fa-user-plus" style="margin-right: 8px;"></i> Enroll Selected Students (<span id="bulkSelectedCountBtn">0</span>)
+                        </button>
+                    </div>
+
+                    <!-- Table Section -->
+                    <div class="table-responsive-wrapper" style="border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden;">
+                        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead style="background: var(--bg-secondary);">
+                                <tr>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color);">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <select id="bulkSelectMode" onchange="handleBulkSelectMode()" style="padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 12px; cursor: pointer;">
+                                                <option value="none">Select...</option>
+                                                <option value="page">Current Page (20)</option>
+                                                <option value="all">All Filtered</option>
+                                                <option value="clear">Clear Selection</option>
+                                            </select>
+                                        </div>
+                                    </th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600;">Register No</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600;">Student Name</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600;">Email</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600;">Phone</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600;">Gender</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600;">Dept</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600;">College Name</th>
+                                    <th style="padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-weight: 600;">District</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulkStudentsTableBody">
+                                <!-- Dynamic rows -->
+                            </tbody>
+                        </table>
+                        
+                        <!-- Empty State -->
+                        <div id="bulkEmptyState" style="display: none; padding: 40px 20px; text-align: center;">
+                            <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(59, 130, 246, 0.1); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                                <i class="fa-solid fa-users-slash" style="font-size: 24px; color: var(--accent-blue);"></i>
+                            </div>
+                            <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--text-primary);">No students are currently available for bulk enrollment.</h3>
+                            <p style="color: var(--text-secondary); font-size: 14px;">All matching students have already been enrolled or no records exist.</p>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                        <span id="bulkPageInfo" style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">Showing 0–0 of 0 Students</span>
+                        
+                        <div style="display: flex; gap: 8px; align-items: center;" id="bulkPaginationControls">
+                            <button class="bulk-download-btn" id="bulkFirstBtn" onclick="goToBulkPage(1)" style="padding: 6px 12px; border-radius: 6px;"><i class="fa-solid fa-angles-left"></i> First</button>
+                            <button class="bulk-download-btn" id="bulkPrevBtn" onclick="changeBulkPage(-1)" style="padding: 6px 12px; border-radius: 6px;"><i class="fa-solid fa-angle-left"></i> Prev</button>
+                            
+                            <div id="bulkPageNumbers" style="display: flex; gap: 4px; margin: 0 8px;">
+                                <!-- Page numbers inserted here -->
+                            </div>
+                            
+                            <button class="bulk-download-btn" id="bulkNextBtn" onclick="changeBulkPage(1)" style="padding: 6px 12px; border-radius: 6px;">Next <i class="fa-solid fa-angle-right"></i></button>
+                            <button class="bulk-download-btn" id="bulkLastBtn" onclick="goToLastBulkPage()" style="padding: 6px 12px; border-radius: 6px;">Last <i class="fa-solid fa-angles-right"></i></button>
+                        </div>
+                    </div>
+
                 </div>
             </section>
 
@@ -1738,11 +1789,19 @@
                 </div>
 
                 <!-- Pagination -->
-                <div class="pagination">
-                    <div class="pagination-info" id="trackingPaginationInfo">Showing 1 to 5 of 5 entries</div>
-                    <div class="pagination-buttons">
-                        <button class="pagination-btn" id="trackPrevBtn" onclick="changeTrackPage(-1)">Previous</button>
-                        <button class="pagination-btn" id="trackNextBtn" onclick="changeTrackPage(1)">Next</button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <span id="trackingPaginationInfo" style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">Showing 0–0 of 0 Students</span>
+                    
+                    <div style="display: flex; gap: 8px; align-items: center;" id="trackingPaginationControls">
+                        <button class="bulk-download-btn" id="trackFirstBtn" onclick="goToTrackPage(1)" style="padding: 6px 12px; border-radius: 6px;"><i class="fa-solid fa-angles-left"></i> First</button>
+                        <button class="bulk-download-btn" id="trackPrevBtn" onclick="changeTrackPage(-1)" style="padding: 6px 12px; border-radius: 6px;"><i class="fa-solid fa-angle-left"></i> Prev</button>
+                        
+                        <div id="trackPageNumbers" style="display: flex; gap: 4px; margin: 0 8px;">
+                            <!-- Page numbers inserted here -->
+                        </div>
+                        
+                        <button class="bulk-download-btn" id="trackNextBtn" onclick="changeTrackPage(1)" style="padding: 6px 12px; border-radius: 6px;">Next <i class="fa-solid fa-angle-right"></i></button>
+                        <button class="bulk-download-btn" id="trackLastBtn" onclick="goToLastTrackPage()" style="padding: 6px 12px; border-radius: 6px;">Last <i class="fa-solid fa-angles-right"></i></button>
                     </div>
                 </div>
             </section>
@@ -1979,7 +2038,7 @@
 
         // Pagination States
         let trackingCurrentPage = 1;
-        const trackingItemsPerPage = 5;
+        const trackingItemsPerPage = 20;
         let trackingFilteredData = [];
 
         let reviewCurrentPage = 1;
@@ -2101,12 +2160,18 @@
                 if (profErr) throw profErr;
 
                 studentProfilesList = profiles || [];
+                
+                // Fetch enrollments to exclude them
+                const { data: dbEnrollments } = await dbClient.from("studentenrollment").select("reg_no");
+                const enrolledRegNos = new Set((dbEnrollments || []).map(e => e.reg_no));
 
                 const selectElement = document.getElementById("enrollSelectStudent");
                 if (selectElement) {
                     selectElement.innerHTML = '<option value="">Select Student (Register Number)</option>';
                     studentProfilesList.forEach(student => {
-                        selectElement.innerHTML += `<option value="${student.reg_no}">${student.reg_no} - ${student.student_name}</option>`;
+                        if (!enrolledRegNos.has(student.reg_no) && student.student_status !== 'Enrolled') {
+                            selectElement.innerHTML += `<option value="${student.reg_no}">${student.reg_no} - ${student.student_name}</option>`;
+                        }
                     });
                 }
             } catch(err) {
@@ -2195,6 +2260,11 @@
 
                 // Load the dropdown list
                 await loadRegisteredStudentsDropdown();
+
+                // Load bulk enrollment table filters and data
+                if (typeof initBulkEnrollmentPage === 'function') {
+                    initBulkEnrollmentPage();
+                }
 
             } catch (err) {
                 console.error("Hybrid sync failure, using local state:", err);
@@ -2722,9 +2792,41 @@
                 const startIndex = (trackingCurrentPage - 1) * trackingItemsPerPage;
                 const endIndex = Math.min(startIndex + trackingItemsPerPage, totalItems);
 
-                document.getElementById("trackingPaginationInfo").innerText = `Showing ${totalItems === 0 ? 0 : startIndex + 1} to ${endIndex} of ${totalItems} entries`;
-                document.getElementById("trackPrevBtn").disabled = trackingCurrentPage === 1;
-                document.getElementById("trackNextBtn").disabled = trackingCurrentPage === totalPages;
+                const pageInfo = document.getElementById("trackingPaginationInfo");
+                if (pageInfo) {
+                    pageInfo.innerText = `Showing ${totalItems === 0 ? 0 : startIndex + 1}–${endIndex} of ${totalItems} Students`;
+                }
+                
+                const firstBtn = document.getElementById("trackFirstBtn");
+                const prevBtn = document.getElementById("trackPrevBtn");
+                const nextBtn = document.getElementById("trackNextBtn");
+                const lastBtn = document.getElementById("trackLastBtn");
+                if (firstBtn) firstBtn.disabled = trackingCurrentPage === 1;
+                if (prevBtn) prevBtn.disabled = trackingCurrentPage === 1;
+                if (nextBtn) nextBtn.disabled = trackingCurrentPage === totalPages;
+                if (lastBtn) lastBtn.disabled = trackingCurrentPage === totalPages;
+
+                // Render Page Numbers
+                const pageNumbersDiv = document.getElementById("trackPageNumbers");
+                if (pageNumbersDiv) {
+                    pageNumbersDiv.innerHTML = "";
+                    let startPage = Math.max(1, trackingCurrentPage - 2);
+                    let endPage = Math.min(totalPages, trackingCurrentPage + 2);
+                    
+                    if (endPage - startPage < 4) {
+                        if (startPage === 1) endPage = Math.min(totalPages, 5);
+                        else if (endPage === totalPages) startPage = Math.max(1, totalPages - 4);
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                        const isActive = i === trackingCurrentPage;
+                        pageNumbersDiv.innerHTML += `
+                            <button onclick="goToTrackPage(${i})" style="width: 32px; height: 32px; border-radius: 6px; border: ${isActive ? 'none' : '1px solid var(--border-color)'}; background: ${isActive ? 'var(--accent-blue)' : 'transparent'}; color: ${isActive ? '#fff' : 'var(--text-primary)'}; font-weight: ${isActive ? '700' : '500'}; cursor: pointer; transition: all 0.2s;">
+                                ${i}
+                            </button>
+                        `;
+                    }
+                }
 
                 const pageData = trackingFilteredData.slice(startIndex, endIndex);
 
@@ -2798,9 +2900,41 @@
                 const startIndex = (trackingCurrentPage - 1) * trackingItemsPerPage;
                 const endIndex = Math.min(startIndex + trackingItemsPerPage, totalItems);
 
-                document.getElementById("trackingPaginationInfo").innerText = `Showing ${totalItems === 0 ? 0 : startIndex + 1} to ${endIndex} of ${totalItems} entries`;
-                document.getElementById("trackPrevBtn").disabled = trackingCurrentPage === 1;
-                document.getElementById("trackNextBtn").disabled = trackingCurrentPage === totalPages;
+                const pageInfo = document.getElementById("trackingPaginationInfo");
+                if (pageInfo) {
+                    pageInfo.innerText = `Showing ${totalItems === 0 ? 0 : startIndex + 1}–${endIndex} of ${totalItems} Students`;
+                }
+                
+                const firstBtn = document.getElementById("trackFirstBtn");
+                const prevBtn = document.getElementById("trackPrevBtn");
+                const nextBtn = document.getElementById("trackNextBtn");
+                const lastBtn = document.getElementById("trackLastBtn");
+                if (firstBtn) firstBtn.disabled = trackingCurrentPage === 1;
+                if (prevBtn) prevBtn.disabled = trackingCurrentPage === 1;
+                if (nextBtn) nextBtn.disabled = trackingCurrentPage === totalPages;
+                if (lastBtn) lastBtn.disabled = trackingCurrentPage === totalPages;
+
+                // Render Page Numbers
+                const pageNumbersDiv = document.getElementById("trackPageNumbers");
+                if (pageNumbersDiv) {
+                    pageNumbersDiv.innerHTML = "";
+                    let startPage = Math.max(1, trackingCurrentPage - 2);
+                    let endPage = Math.min(totalPages, trackingCurrentPage + 2);
+                    
+                    if (endPage - startPage < 4) {
+                        if (startPage === 1) endPage = Math.min(totalPages, 5);
+                        else if (endPage === totalPages) startPage = Math.max(1, totalPages - 4);
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                        const isActive = i === trackingCurrentPage;
+                        pageNumbersDiv.innerHTML += `
+                            <button onclick="goToTrackPage(${i})" style="width: 32px; height: 32px; border-radius: 6px; border: ${isActive ? 'none' : '1px solid var(--border-color)'}; background: ${isActive ? 'var(--accent-blue)' : 'transparent'}; color: ${isActive ? '#fff' : 'var(--text-primary)'}; font-weight: ${isActive ? '700' : '500'}; cursor: pointer; transition: all 0.2s;">
+                                ${i}
+                            </button>
+                        `;
+                    }
+                }
 
                 const pageData = trackingFilteredData.slice(startIndex, endIndex);
 
@@ -2841,6 +2975,18 @@
 
         function changeTrackPage(offset) {
             trackingCurrentPage += offset;
+            renderTrackingTable();
+        }
+
+        function goToTrackPage(page) {
+            trackingCurrentPage = page;
+            renderTrackingTable();
+        }
+
+        function goToLastTrackPage() {
+            const totalItems = trackingFilteredData.length;
+            const totalPages = Math.ceil(totalItems / trackingItemsPerPage) || 1;
+            trackingCurrentPage = totalPages;
             renderTrackingTable();
         }
 
@@ -3296,10 +3442,6 @@
                     reg_no: d.regNo,
                     tutor_username: tutorUsername,
                     course_name: d.course,
-                    course_completed: "No",
-                    mark_obtained: 0,
-                    overall_result: "In Progress",
-                    certificate_issued: "No",
                     student_status: "Enrolled"
                 }]).select();
                 
@@ -3335,13 +3477,13 @@
                 // Log activity
                 addActivityLog('enrollment', 'Student Enrolled', `${d.name} enrolled in ${d.course}.`);
                 
-                // Reset form
+                // Reset form and update dropdown to hide enrolled student
                 document.getElementById("enrollmentForm").reset();
                 handleStudentSelect(""); // Clear auto-populated fields
+                await loadRegisteredStudentsDropdown();
                 
                 renderAllData();
-                showToast("Student enrolled successfully!", "success");
-                navigate('trackingPage', document.querySelectorAll('.menu-item')[3]); // Navigate to student tracking
+                showToast("Student successfully enrolled.", "success");
                 
             } catch (err) {
                 console.error("Enrollment failed:", err);
@@ -3378,266 +3520,244 @@
             }
         }
 
-        // BULK IMPORT EXCEL FILE
-        let excelParsedRecords = [];
-        let validationSummary = { total: 0, valid: 0, errors: 0 };
+        // BULK ENROLLMENT - NEW WORKFLOW
+        let bulkCurrentPage = 1;
+        const bulkItemsPerPage = 20;
+        let bulkAvailableStudentsList = []; // Students not enrolled
+        let bulkFilteredStudents = []; // Filtered un-enrolled students
+        let bulkSelectedStudents = new Set();
+        let bulkTotalEnrolledCount = 0;
 
-        async function handleExcelUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+        function initBulkEnrollmentPage() {
+            // Calculate enrolled students to exclude them
+            const enrolledRegNos = new Set(studentsData.map(s => s.reg_no));
+            bulkTotalEnrolledCount = enrolledRegNos.size;
+            
+            // Available students are those in profile but NOT in enrollment table
+            bulkAvailableStudentsList = studentProfilesList.filter(s => !enrolledRegNos.has(s.reg_no));
+            
+            const collegeSelect = document.getElementById("bulkFilterCollege");
+            const deptSelect = document.getElementById("bulkFilterDept");
+            const districtSelect = document.getElementById("bulkFilterDistrict");
+            
+            if (!collegeSelect || !deptSelect || !districtSelect) return;
 
+            const colleges = [...new Set(bulkAvailableStudentsList.map(s => s.college_name).filter(Boolean))].sort();
+            const depts = [...new Set(bulkAvailableStudentsList.map(s => s.department).filter(Boolean))].sort();
+            const districts = [...new Set(bulkAvailableStudentsList.map(s => s.district).filter(Boolean))].sort();
+
+            const currCollege = collegeSelect.value;
+            const currDept = deptSelect.value;
+            const currDistrict = districtSelect.value;
+
+            collegeSelect.innerHTML = '<option value="">All Colleges</option>' + colleges.map(c => `<option value="${c}">${c}</option>`).join('');
+            deptSelect.innerHTML = '<option value="">All Departments</option>' + depts.map(d => `<option value="${d}">${d}</option>`).join('');
+            districtSelect.innerHTML = '<option value="">All Districts</option>' + districts.map(d => `<option value="${d}">${d}</option>`).join('');
+
+            collegeSelect.value = currCollege;
+            deptSelect.value = currDept;
+            districtSelect.value = currDistrict;
+
+            // Reset selection when initializing
+            bulkSelectedStudents.clear();
+            
+            renderBulkStudentTable();
+        }
+
+        function renderBulkStudentTable() {
+            const collegeFilter = document.getElementById("bulkFilterCollege");
+            const deptFilter = document.getElementById("bulkFilterDept");
+            const districtFilter = document.getElementById("bulkFilterDistrict");
+            
+            if (!collegeFilter) return;
+
+            const cVal = collegeFilter.value;
+            const dVal = deptFilter.value;
+            const distVal = districtFilter.value;
+
+            bulkFilteredStudents = bulkAvailableStudentsList.filter(s => {
+                if (cVal && s.college_name !== cVal) return false;
+                if (dVal && s.department !== dVal) return false;
+                if (distVal && s.district !== distVal) return false;
+                return true;
+            });
+
+            // Update Statistics
+            const statTotalAvail = document.getElementById("statTotalAvailable");
+            const statFiltered = document.getElementById("statFiltered");
+            const statEnrolled = document.getElementById("statEnrolled");
+            if (statTotalAvail) statTotalAvail.innerText = bulkAvailableStudentsList.length;
+            if (statFiltered) statFiltered.innerText = bulkFilteredStudents.length;
+            if (statEnrolled) statEnrolled.innerText = bulkTotalEnrolledCount;
+            updateBulkSelectCount();
+
+            const totalPages = Math.ceil(bulkFilteredStudents.length / bulkItemsPerPage) || 1;
+            if (bulkCurrentPage > totalPages) bulkCurrentPage = totalPages;
+            if (bulkCurrentPage < 1) bulkCurrentPage = 1;
+
+            const startIndex = (bulkCurrentPage - 1) * bulkItemsPerPage;
+            const paginatedStudents = bulkFilteredStudents.slice(startIndex, startIndex + bulkItemsPerPage);
+
+            const tbody = document.getElementById("bulkStudentsTableBody");
+            const emptyState = document.getElementById("bulkEmptyState");
+            
+            if (!tbody) return;
+
+            if (bulkFilteredStudents.length === 0) {
+                tbody.innerHTML = "";
+                if (emptyState) emptyState.style.display = "block";
+            } else {
+                if (emptyState) emptyState.style.display = "none";
+                tbody.innerHTML = paginatedStudents.map(s => `
+                    <tr style="background: rgba(255,255,255,0.01); transition: background 0.2s;" onmouseover="this.style.background='rgba(59, 130, 246, 0.05)'" onmouseout="this.style.background='rgba(255,255,255,0.01)'">
+                        <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">
+                            <input type="checkbox" class="bulk-student-checkbox" value="${s.reg_no}" 
+                                ${bulkSelectedStudents.has(s.reg_no) ? 'checked' : ''} 
+                                onchange="toggleBulkSelectStudent('${s.reg_no}', this.checked)" style="cursor: pointer; width: 16px; height: 16px; accent-color: var(--accent-blue);">
+                        </td>
+                        <td style="padding: 12px; border-bottom: 1px solid var(--border-color); font-weight: 600;">${s.reg_no || '-'}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">${s.student_name || '-'}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">${s.mail_id || '-'}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">${s.phone_no || '-'}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">${s.gender || '-'}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">${s.department || '-'}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">${s.college_name || '-'}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid var(--border-color);">${s.district || '-'}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Pagination Details
+            const endIndex = Math.min(startIndex + bulkItemsPerPage, bulkFilteredStudents.length);
+            const pageInfo = document.getElementById("bulkPageInfo");
+            if (pageInfo) {
+                pageInfo.innerText = `Showing ${bulkFilteredStudents.length > 0 ? startIndex + 1 : 0}–${endIndex} of ${bulkFilteredStudents.length} Students`;
+            }
+            
+            // Buttons
+            const firstBtn = document.getElementById("bulkFirstBtn");
+            const prevBtn = document.getElementById("bulkPrevBtn");
+            const nextBtn = document.getElementById("bulkNextBtn");
+            const lastBtn = document.getElementById("bulkLastBtn");
+            if (firstBtn) firstBtn.disabled = bulkCurrentPage === 1;
+            if (prevBtn) prevBtn.disabled = bulkCurrentPage === 1;
+            if (nextBtn) nextBtn.disabled = bulkCurrentPage === totalPages;
+            if (lastBtn) lastBtn.disabled = bulkCurrentPage === totalPages;
+
+            // Render Page Numbers
+            const pageNumbersDiv = document.getElementById("bulkPageNumbers");
+            if (pageNumbersDiv) {
+                pageNumbersDiv.innerHTML = "";
+                let startPage = Math.max(1, bulkCurrentPage - 2);
+                let endPage = Math.min(totalPages, bulkCurrentPage + 2);
+                
+                if (endPage - startPage < 4) {
+                    if (startPage === 1) endPage = Math.min(totalPages, 5);
+                    else if (endPage === totalPages) startPage = Math.max(1, totalPages - 4);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    const isActive = i === bulkCurrentPage;
+                    pageNumbersDiv.innerHTML += `
+                        <button onclick="goToBulkPage(${i})" style="width: 32px; height: 32px; border-radius: 6px; border: ${isActive ? 'none' : '1px solid var(--border-color)'}; background: ${isActive ? 'var(--accent-blue)' : 'transparent'}; color: ${isActive ? '#fff' : 'var(--text-primary)'}; font-weight: ${isActive ? '700' : '500'}; cursor: pointer; transition: all 0.2s;">
+                            ${i}
+                        </button>
+                    `;
+                }
+            }
+
+            const selectMode = document.getElementById("bulkSelectMode");
+            if (selectMode) selectMode.value = "none";
+        }
+
+        function changeBulkPage(delta) {
+            bulkCurrentPage += delta;
+            renderBulkStudentTable();
+        }
+
+        function goToBulkPage(page) {
+            bulkCurrentPage = page;
+            renderBulkStudentTable();
+        }
+
+        function goToLastBulkPage() {
+            const totalPages = Math.ceil(bulkFilteredStudents.length / bulkItemsPerPage) || 1;
+            bulkCurrentPage = totalPages;
+            renderBulkStudentTable();
+        }
+
+        function handleBulkSelectMode() {
+            const mode = document.getElementById("bulkSelectMode").value;
+            const startIndex = (bulkCurrentPage - 1) * bulkItemsPerPage;
+            const paginatedStudents = bulkFilteredStudents.slice(startIndex, startIndex + bulkItemsPerPage);
+
+            if (mode === "page") {
+                paginatedStudents.forEach(s => bulkSelectedStudents.add(s.reg_no));
+            } else if (mode === "all") {
+                bulkFilteredStudents.forEach(s => bulkSelectedStudents.add(s.reg_no));
+            } else if (mode === "clear") {
+                bulkSelectedStudents.clear();
+            }
+            
+            renderBulkStudentTable();
+            updateBulkSelectCount();
+        }
+
+        function toggleBulkSelectStudent(regNo, isChecked) {
+            if (isChecked) {
+                bulkSelectedStudents.add(regNo);
+            } else {
+                bulkSelectedStudents.delete(regNo);
+            }
+            updateBulkSelectCount();
+        }
+
+        function updateBulkSelectCount() {
+            const statSelected = document.getElementById("statSelected");
+            const btnCount = document.getElementById("bulkSelectedCountBtn");
+            if (statSelected) statSelected.innerText = bulkSelectedStudents.size;
+            if (btnCount) btnCount.innerText = bulkSelectedStudents.size;
+        }
+
+        async function processNewBulkEnrollment() {
             const course = document.getElementById("bulkEnrollCourse").value;
+            
             if (!course) {
                 showToast("Please select a Course first.", "error");
-                e.target.value = "";
+                return;
+            }
+            
+            if (bulkSelectedStudents.size === 0) {
+                showToast("Please select at least one student.", "error");
                 return;
             }
 
-            showToast("Reading file...", "info");
-
-            const reader = new FileReader();
-            reader.onload = async function(evt) {
-                try {
-                    const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-                    // Filter out completely empty rows
-                    const activeRows = jsonData.filter(row => {
-                        const name = row.student_name || row.Name || "";
-                        const regNo = (row.reg_no || row.RegNo || "").toString().trim();
-                        const email = (row.mail_id || row.Email || "").toString().trim();
-                        return !!(name || regNo || email);
-                    });
-
-                    if (activeRows.length === 0) {
-                        showToast("The Excel file has no valid student rows.", "error");
-                        return;
-                    }
-
-                    // Fetch existing enrollments from database for duplication check
-                    const { data: dbEnrollments, error } = await dbClient.from("studentenrollment").select("reg_no, course_name, mail_id");
-                    const dbEmails = dbEnrollments ? dbEnrollments.map(item => item.mail_id) : [];
-
-                    excelParsedRecords = [];
-                    validationSummary = { total: activeRows.length, valid: 0, errors: 0 };
-
-                    const regNoCountsInFile = {};
-                    const emailCountsInFile = {};
-
-                    // First pass: count occurrences in file for file-level duplicate detection
-                    activeRows.forEach(row => {
-                        const regNo = (row.reg_no || row.RegNo || "").toString().trim();
-                        const email = (row.mail_id || row.Email || "").toString().trim();
-                        if (regNo) regNoCountsInFile[regNo] = (regNoCountsInFile[regNo] || 0) + 1;
-                        if (email) emailCountsInFile[email] = (emailCountsInFile[email] || 0) + 1;
-                    });
-
-                    // Second pass: validate each record
-                    activeRows.forEach((row, idx) => {
-                        const name = row.student_name || row.Name || "";
-                        const regNo = (row.reg_no || row.RegNo || "").toString().trim();
-                        const email = (row.mail_id || row.Email || "").toString().trim();
-                        const phone = row.phone_no || row.Phone || "";
-                        const gender = row.gender || "Male";
-                        const dept = row.department || row.Department || "";
-                        const college = row.college_name || row.College || "";
-                        const collegeCode = row.college_code || row.CollegeCode || "";
-                        const district = row.district || row.District || "";
-                        const university = row.university || row.University || "";
-
-                        let errors = [];
-
-                        if (!name) errors.push("Missing Student Name");
-                        if (!regNo) errors.push("Missing Register Number");
-                        if (!email) errors.push("Missing Email ID");
-
-                        // Email format validation
-                        if (email) {
-                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                            if (!emailRegex.test(email)) {
-                                errors.push("Invalid Email Address format");
-                            }
-                        }
-
-                        // Phone number length validation
-                        if (phone) {
-                            const phoneRegex = /^\+?[0-9]{10,15}$/;
-                            if (!phoneRegex.test(phone.toString().trim())) {
-                                errors.push("Phone must be 10-15 digits");
-                            }
-                        }
-
-                        if (regNo) {
-                            if (regNoCountsInFile[regNo] > 1) {
-                                errors.push("Duplicate Register Number in file");
-                            }
-                            const isDupEnroll = dbEnrollments && dbEnrollments.some(e => e.reg_no === regNo && e.course_name === course);
-                            if (isDupEnroll) {
-                                errors.push("Already enrolled in this course");
-                            }
-                        }
-
-                        if (email) {
-                            if (emailCountsInFile[email] > 1) {
-                                errors.push("Duplicate Email in file");
-                            }
-                        }
-
-                        const isValid = errors.length === 0;
-                        if (isValid) {
-                            validationSummary.valid++;
-                        } else {
-                            validationSummary.errors++;
-                        }
-
-                        excelParsedRecords.push({
-                            name,
-                            regNo,
-                            email,
-                            phone,
-                            gender,
-                            dept,
-                            college,
-                            collegeCode,
-                            district,
-                            university,
-                            course,
-                            errors,
-                            isValid
-                        });
-                    });
-
-                    // Render Preview and Summary
-                    renderExcelPreview();
-                    
-                    document.getElementById("summaryTotal").innerText = validationSummary.total;
-                    document.getElementById("summaryValid").innerText = validationSummary.valid;
-                    document.getElementById("summaryErrors").innerText = validationSummary.errors;
-                    
-                    document.getElementById("bulkSummarySection").style.display = "block";
-                    document.getElementById("excelPreviewSection").style.display = "block";
-                    
-                    if (validationSummary.valid > 0) {
-                        document.getElementById("btnImportExcel").style.display = "inline-flex";
-                        document.getElementById("importCount").innerText = validationSummary.valid;
-                    } else {
-                        document.getElementById("btnImportExcel").style.display = "none";
-                    }
-
-                    showToast("Excel file processed and validated.", "success");
-                } catch (err) {
-                    showToast("Error parsing Excel file.", "error");
-                    console.error(err);
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function renderExcelPreview() {
-            const body = document.getElementById("excelPreviewBody");
-            body.innerHTML = "";
-
-            excelParsedRecords.forEach(row => {
-                const statusHtml = row.isValid 
-                    ? `<span style="background: rgba(16, 185, 129, 0.15); color: #10b981; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600;">Valid</span>`
-                    : `<span style="background: rgba(239, 68, 68, 0.15); color: #ef4444; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; display: block;" title="${row.errors.join(', ')}">${row.errors[0]}</span>`;
-                
-                body.innerHTML += `
-                    <tr>
-                        <td style="font-weight: 600;">${row.name || '-'}</td>
-                        <td>${row.regNo || '-'}</td>
-                        <td>${row.email || '-'}</td>
-                        <td>${row.college || '-'}</td>
-                        <td>${row.dept || '-'}</td>
-                        <td>${statusHtml}</td>
-                    </tr>
-                `;
-            });
-        }
-
-        async function processBulkImport() {
-            const validRecords = excelParsedRecords.filter(r => r.isValid);
-            if (validRecords.length === 0) return;
-
-            showToast(`Importing ${validRecords.length} student records...`, "info");
+            showToast(`Enrolling ${bulkSelectedStudents.size} students...`, "info");
             let successCount = 0;
             const tutorUsername = localStorage.getItem("user") || "NEC Tutor";
 
-            // Fetch existing logins to avoid duplicates
-            let dbUsernames = [];
-            try {
-                const { data: dbLogins, error: loginErr } = await dbClient.from("login").select("username");
-                if (dbLogins) {
-                    dbUsernames = dbLogins.map(item => item.username);
-                }
-            } catch (err) {
-                console.error("Failed to fetch login usernames:", err);
-            }
+            const selectedRegNos = Array.from(bulkSelectedStudents);
 
-            for (const record of validRecords) {
+            for (const regNo of selectedRegNos) {
+                const studentProfile = studentProfilesList.find(s => s.reg_no === regNo);
+                if (!studentProfile) continue;
+
                 try {
-                    // 1. Auto-provision login account in Supabase login table if it doesn't exist
-                    if (!dbUsernames.includes(record.regNo)) {
-                        const { error: loginInsertErr } = await dbClient.from("login").insert([{
-                            username: record.regNo,
-                            password: record.regNo, // password defaults to Register Number
-                            role: "Student"
-                        }]);
-                        if (loginInsertErr) {
-                            console.error(`Failed to insert login for student ${record.regNo}:`, loginInsertErr);
-                        } else {
-                            dbUsernames.push(record.regNo);
-                        }
-                    }
-
-                    // 2. Auto-provision profile in Supabase studentprofile table if missing
-                    const profExists = studentProfilesList.some(p => p.reg_no === record.regNo);
-                    if (!profExists) {
-                        try {
-                            const { error: profErr } = await dbClient.from("studentprofile").insert([{
-                                reg_no: record.regNo,
-                                student_name: record.name,
-                                mail_id: record.email,
-                                gender: record.gender || "Male",
-                                phone_no: record.phone || "",
-                                department: record.dept || "",
-                                college_name: record.college || "",
-                                college_code: record.collegeCode || "",
-                                district: record.district || "",
-                                university: record.university || "",
-                                student_status: "Active"
-                            }]);
-                            if (profErr) {
-                                console.error(`Failed to auto-provision profile for ${record.regNo}:`, profErr);
-                            }
-                        } catch(profEx) {
-                            console.error(`Exception auto-provisioning profile:`, profEx);
-                        }
-                    }
-
-                    // 3. Insert into Supabase table studentenrollment
-                    const { data, error } = await dbClient.from("studentenrollment").insert([{
-                        reg_no: record.regNo,
-                        student_name: record.name,
+                    const { error } = await dbClient.from("studentenrollment").insert([{
+                        reg_no: studentProfile.reg_no,
+                        student_name: studentProfile.student_name,
                         tutor_username: tutorUsername,
-                        course_name: record.course,
-                        course_completed: "No",
-                        mark_obtained: 0,
-                        overall_result: "In Progress",
-                        certificate_issued: "No",
+                        course_name: course,
                         student_status: "Enrolled"
-                    }]).select();
+                    }]);
 
                     if (error) throw error;
 
-                    // 4. Insert default record in studentcoursetracking
                     try {
                         await dbClient.from("studentcoursetracking").insert([{
-                            reg_no: record.regNo,
-                            student_name: record.name,
-                            course_name: record.course,
+                            reg_no: studentProfile.reg_no,
+                            student_name: studentProfile.student_name,
+                            course_name: course,
                             module_name: "Module 1: Getting Started",
                             video_completed: "No",
                             video_lastwatched: "-",
@@ -3658,68 +3778,22 @@
 
                     successCount++;
                 } catch (err) {
-                    console.error(`Database insert failed for ${record.name}, fallback locally:`, err);
-                    successCount++;
+                    console.error(`Enrollment failed for ${studentProfile.student_name}:`, err);
                 }
             }
 
-            // Sync database state to reload list and dropdowns
             await syncDatabaseState();
 
-            // Log bulk action
-            addActivityLog('enrollment', 'Bulk Enrollment', `Imported ${successCount} students via Excel.`);
+            addActivityLog('enrollment', 'Bulk Enrollment', `Enrolled ${successCount} students in ${course}.`);
 
-            // Reset and clean up
-            document.getElementById("excelFileInput").value = "";
-            document.getElementById("bulkSummarySection").style.display = "none";
-            document.getElementById("excelPreviewSection").style.display = "none";
-            document.getElementById("btnImportExcel").style.display = "none";
-            excelParsedRecords = [];
+            // Re-initialize to remove enrolled students from list and update stats
+            initBulkEnrollmentPage(); 
 
-            // Refresh UI dropdowns and table
-            await loadRegisteredStudentsDropdown();
-            renderAllData();
-
-            showToast(`Successfully enrolled ${successCount} students! Login passwords set to their Register Numbers.`, "success");
-            navigate('trackingPage', document.querySelectorAll('.menu-item')[3]); // Navigate to student tracking
-        }
-
-        // GENERATE TEMPLATE EXCEL FILE FOR USER DOWNLOAD
-        function downloadSampleTemplate() {
-            const templateData = [
-                { 
-                    student_name: "John Doe", 
-                    reg_no: "NEC2026101", 
-                    mail_id: "john.doe@gmail.com", 
-                    phone_no: "9876543210", 
-                    gender: "Male", 
-                    department: "CSE", 
-                    college_name: "NEC College of Engineering", 
-                    college_code: "NEC01", 
-                    district: "Chennai", 
-                    university: "Anna University" 
-                },
-                { 
-                    student_name: "Jane Smith", 
-                    reg_no: "NEC2026102", 
-                    mail_id: "jane.smith@gmail.com", 
-                    phone_no: "9876543211", 
-                    gender: "Female", 
-                    department: "ECE", 
-                    college_name: "PSG College of Technology", 
-                    college_code: "PSG02", 
-                    district: "Coimbatore", 
-                    university: "Anna University" 
-                }
-            ];
-
-            const worksheet = XLSX.utils.json_to_sheet(templateData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "RosterTemplate");
-            
-            // Download file
-            XLSX.writeFile(workbook, "LMS_Bulk_Enrollment_Template.xlsx");
-            showToast("Template spreadsheet downloaded.", "success");
+            if (successCount > 0) {
+                showToast(`${successCount} students successfully enrolled in ${course}.`, "success");
+            } else {
+                showToast(`0 students enrolled. They might already be enrolled.`, "info");
+            }
         }
 
         // EXPORT REPORTS
