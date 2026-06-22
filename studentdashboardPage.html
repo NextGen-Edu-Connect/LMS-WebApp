@@ -19,8 +19,102 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
       rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-      <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* Custom status header styles */
+.student-header-card {
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 25px 30px;
+    margin-bottom: 35px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.student-info-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.student-info-left h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0;
+}
+
+.student-info-left p {
+    color: #cbd5e1;
+    font-size: 14px;
+    margin: 0;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    border-radius: 9999px;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-enrolled {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.status-in-progress {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.status-completed {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.status-inactive {
+    background: rgba(107, 114, 128, 0.15);
+    color: #6b7280;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.student-meta-details {
+    display: flex;
+    gap: 15px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    font-size: 12px;
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 6px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+</style>
 
 <style>
 
@@ -334,6 +428,19 @@ body{
 </head>
 <body>
  
+<!-- GORGEOUS GLASSMORPHIC STUDENT HEADER -->
+<div class="student-header-card">
+    <div class="student-info-left">
+        <p>Student Account Dashboard</p>
+        <h1>Welcome, <span id="studentWelcomeName">Loading Profile...</span></h1>
+        <div id="studentTrackingDetails" class="student-meta-details" style="display: none;">
+            <!-- Dynamic Metadata items like College, Dept -->
+        </div>
+    </div>
+    <div id="enrollmentStatusBadgeContainer">
+        <!-- Dynamic badge here -->
+    </div>
+</div>
 
 <div class="section-title">
     My Courses
@@ -602,6 +709,101 @@ function openCourse(id)
     "coursePage.html?id=" + id;
 }
 
+async function checkEnrollmentStatus() {
+    const username = localStorage.getItem("user");
+    
+    if (!username) {
+        document.getElementById("studentWelcomeName").innerText = "Guest Student";
+        document.getElementById("enrollmentStatusBadgeContainer").innerHTML = `
+            <span class="status-badge status-pending">
+                <i class="fa-solid fa-triangle-exclamation" style="margin-right: 6px;"></i>Not Logged In
+            </span>
+        `;
+        return;
+    }
+
+    try {
+        const { data, error } = await client
+            .from("studentenrollment")
+            .select("*")
+            .eq("reg_no", username);
+
+        const badgeContainer = document.getElementById("enrollmentStatusBadgeContainer");
+        const studentNameHeader = document.getElementById("studentWelcomeName");
+        const trackingSection = document.getElementById("studentTrackingDetails");
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            const student = data[0];
+            if (studentNameHeader) {
+                studentNameHeader.innerText = student.student_name || username;
+            }
+            if (badgeContainer) {
+                const status = student.enrollment_status || "Enrolled";
+                let statusClass = "status-enrolled";
+                let iconClass = "fa-solid fa-circle-check";
+                
+                if (status === "Pending") {
+                    statusClass = "status-pending";
+                    iconClass = "fa-solid fa-clock";
+                } else if (status === "In Progress") {
+                    statusClass = "status-in-progress";
+                    iconClass = "fa-solid fa-spinner fa-spin";
+                } else if (status === "Completed") {
+                    statusClass = "status-completed";
+                    iconClass = "fa-solid fa-graduation-cap";
+                } else if (status === "Inactive") {
+                    statusClass = "status-inactive";
+                    iconClass = "fa-solid fa-circle-xmark";
+                }
+
+                badgeContainer.innerHTML = `
+                    <span class="status-badge ${statusClass}">
+                        <i class="${iconClass}" style="margin-right: 6px;"></i>${status}
+                    </span>
+                `;
+            }
+            if (trackingSection) {
+                trackingSection.innerHTML = `
+                    <div class="meta-item"><i class="fa-solid fa-university" style="margin-right: 6px;"></i>${student.college_name || 'NEC College'}</div>
+                    <div class="meta-item"><i class="fa-solid fa-graduation-cap" style="margin-right: 6px;"></i>${student.department || 'CSE'}</div>
+                    <div class="meta-item"><i class="fa-solid fa-id-card" style="margin-right: 6px;"></i>Reg No: ${student.reg_no}</div>
+                `;
+                trackingSection.style.display = "flex";
+            }
+        } else {
+            // Check local storage registered students metadata for name fallback
+            const registered = JSON.parse(localStorage.getItem("registered_students")) || [];
+            const matchedReg = registered.find(s => s.reg_no === username);
+            const studentName = matchedReg ? matchedReg.student_name : username;
+
+            if (studentNameHeader) {
+                studentNameHeader.innerText = studentName;
+            }
+            if (badgeContainer) {
+                badgeContainer.innerHTML = `
+                    <span class="status-badge status-pending">
+                        <i class="fa-solid fa-clock" style="margin-right: 6px;"></i>Registered (Pending Enrollment)
+                    </span>
+                `;
+            }
+            if (trackingSection) {
+                trackingSection.innerHTML = `
+                    <div class="meta-item"><i class="fa-solid fa-id-card" style="margin-right: 6px;"></i>Reg No: ${username}</div>
+                    <div class="meta-item"><i class="fa-solid fa-user-clock" style="margin-right: 6px;"></i>Pending Tutor Action</div>
+                `;
+                trackingSection.style.display = "flex";
+            }
+        }
+    } catch (err) {
+        console.error("Error checking student enrollment:", err);
+        document.getElementById("studentWelcomeName").innerText = username;
+    }
+}
+
+// Initialize data
+checkEnrollmentStatus();
 loadCourses();
 
 </script>

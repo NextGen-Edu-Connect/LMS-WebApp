@@ -19,6 +19,52 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
       rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+/* Custom status styling in student wrapper */
+.topbar-right-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.status-pill.enrolled {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.status-pill.pending {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.status-pill.in-progress {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.status-pill.completed {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+.status-pill.inactive {
+    background: rgba(107, 114, 128, 0.15);
+    color: #6b7280;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+}
+</style>
 
 <style>
 
@@ -215,15 +261,18 @@ body{
         <!-- TOPBAR -->
         <div class="topbar">
             <div>
-                <h1>
+                <h1 id="topWelcomeHeader">
                     Welcome Back 👋
                 </h1>
                 <p>
                     Continue your learning journey
                 </p>
             </div>
-            <div class="profile">
-                <img src="">
+            <div class="topbar-right-controls">
+                <div id="topEnrollmentBadge"></div>
+                <div class="profile">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" style="border: 2px solid rgba(255,255,255,0.2);">
+                </div>
             </div>
         </div>
 
@@ -236,6 +285,76 @@ body{
     </div>
 </div>
 <script>
+
+const SUPABASE_URL = "https://akodraeqesulsofaanna.supabase.co";
+const SUPABASE_KEY = "sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+async function checkTopEnrollmentStatus() {
+    const username = localStorage.getItem("user");
+    if (!username) return;
+
+    try {
+        const { data, error } = await client
+            .from("studentenrollment")
+            .select("student_name, enrollment_status")
+            .eq("reg_no", username);
+
+        const badge = document.getElementById("topEnrollmentBadge");
+        const header = document.getElementById("topWelcomeHeader");
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            const student = data[0];
+            if (header) header.innerText = `Welcome, ${student.student_name || username} 👋`;
+            if (badge) {
+                const status = student.enrollment_status || "Enrolled";
+                let statusClass = "enrolled";
+                let iconClass = "fa-solid fa-circle-check";
+                
+                if (status === "Pending") {
+                    statusClass = "pending";
+                    iconClass = "fa-solid fa-clock";
+                } else if (status === "In Progress") {
+                    statusClass = "in-progress";
+                    iconClass = "fa-solid fa-spinner fa-spin";
+                } else if (status === "Completed") {
+                    statusClass = "completed";
+                    iconClass = "fa-solid fa-graduation-cap";
+                } else if (status === "Inactive") {
+                    statusClass = "inactive";
+                    iconClass = "fa-solid fa-circle-xmark";
+                }
+
+                badge.innerHTML = `
+                    <span class="status-pill ${statusClass}">
+                        <i class="${iconClass}" style="margin-right: 5px;"></i>${status}
+                    </span>
+                `;
+            }
+        } else {
+            // Check local storage registered students metadata for name fallback
+            const registered = JSON.parse(localStorage.getItem("registered_students")) || [];
+            const matchedReg = registered.find(s => s.reg_no === username);
+            const studentName = matchedReg ? matchedReg.student_name : username;
+
+            if (header) header.innerText = `Welcome, ${studentName} 👋`;
+            if (badge) {
+                badge.innerHTML = `
+                    <span class="status-pill pending">
+                        <i class="fa-solid fa-clock" style="margin-right: 5px;"></i>Pending Enrollment
+                    </span>
+                `;
+            }
+        }
+    } catch(err) {
+        console.error("Topbar status query failed:", err);
+    }
+}
+
+// Run status query on load
+window.addEventListener("DOMContentLoaded", checkTopEnrollmentStatus);
 
 function loadPage(page, element)
 {
