@@ -252,7 +252,8 @@
 
     document.addEventListener("DOMContentLoaded", initCertificates);
 
-    async function initCertificates() {
+    async function initCertificates()
+     {
       try {
         const loginUser = (localStorage.getItem("user") || "").trim();
 
@@ -330,7 +331,8 @@
       return byName.data || null;
     }
 
-    async function fetchStudentEnrollments(regNo, studentName) {
+    async function fetchStudentEnrollments(regNo, studentName) 
+    {
       let query = client.from("studentenrollment").select("*");
 
       if (regNo) {
@@ -457,8 +459,10 @@
       `;
     }
 
-    function downloadCertificate(courseName, isIssued) {
-      if (isIssued !== 'true' && isIssued !== true) {
+    function downloadCertificate(courseName, isIssued)
+     {
+      if (isIssued !== 'true' && isIssued !== true) 
+      {
         alert('Certificate not issued yet for this course.');
         return;
       }
@@ -472,7 +476,8 @@
       // window.open(certificateUrl, '_blank');
     }
 
-    function showError(message) {
+    function showError(message) 
+    {
       const errorBox = document.getElementById("errorBox");
       errorBox.textContent = message;
       errorBox.classList.remove("hidden");

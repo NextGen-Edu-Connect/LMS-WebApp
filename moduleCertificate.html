@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Module Certificate</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins,sans-serif;
+}
+
+body{
+    background:#f4f6fb;
+    padding:30px;
+}
+
+.top-bar{
+    text-align:center;
+    margin-bottom:20px;
+}
+
+.download-btn{
+    border:none;
+    padding:14px 30px;
+    border-radius:12px;
+    background:#2563eb;
+    color:#fff;
+    cursor:pointer;
+    font-size:16px;
+    font-weight:600;
+}
+
+.download-btn:hover{
+    background:#1d4ed8;
+}
+
+.certificate{
+    max-width:1100px;
+    margin:auto;
+    background:white;
+    border:12px solid #2563eb;
+    padding:60px;
+    text-align:center;
+    position:relative;
+}
+
+.logo{
+    width:180px;
+    margin-bottom:20px;
+}
+
+.cert-title{
+    font-size:42px;
+    font-weight:700;
+    color:#2563eb;
+    margin-bottom:15px;
+}
+
+.subtitle{
+    font-size:20px;
+    color:#666;
+}
+
+.student-name{
+    font-size:42px;
+    font-weight:700;
+    color:#111;
+    margin:30px 0;
+}
+
+.module-name{
+    font-size:30px;
+    font-weight:600;
+    color:#1d4ed8;
+    margin:20px 0;
+}
+
+.info{
+    margin-top:20px;
+    font-size:20px;
+}
+
+.row{
+    margin-top:15px;
+}
+
+.footer{
+    margin-top:70px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.signature{
+    text-align:center;
+}
+
+.line{
+    width:220px;
+    border-top:2px solid #000;
+    margin-bottom:10px;
+}
+
+.certificate-no{
+    position:absolute;
+    top:20px;
+    right:20px;
+    font-size:14px;
+    color:#666;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="top-bar">
+    <button class="download-btn" onclick="downloadPDF()">
+        📄 Download PDF
+    </button>
+</div>
+
+<div class="certificate" id="certificate">
+
+    <div class="certificate-no" id="certificateNo"></div>
+
+    <img src="logo.png" class="logo">
+
+    <div class="cert-title">
+        CERTIFICATE OF MODULE COMPLETION
+    </div>
+
+    <div class="subtitle">
+        This certificate is proudly presented to
+    </div>
+
+    <div class="student-name" id="studentName">
+        Loading...
+    </div>
+
+    <div class="subtitle">
+        for successfully completing
+    </div>
+
+    <div class="module-name" id="moduleName">
+    </div>
+
+    <div class="info row">
+        Course :
+        <strong id="courseName"></strong>
+    </div>
+
+    <div class="info row">
+        Module Score :
+        <strong id="moduleScore"></strong>
+    </div>
+
+    <div class="info row">
+        Result :
+        <strong id="moduleResult"></strong>
+    </div>
+
+    <div class="info row">
+        Date :
+        <strong id="certificateDate"></strong>
+    </div>
+
+    <div class="footer">
+
+        <div>
+            NextGEN Learners
+        </div>
+
+        <div class="signature">
+            <div class="line"></div>
+            Authorized Signatory
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
+const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
+const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
+
+const params =new URLSearchParams( window.location.search);
+
+const regNo =
+params.get("regNo");
+
+const courseName =
+params.get("course");
+
+const moduleName =
+params.get("module");
+
+async function loadCertificate()
+{
+    const {
+        data,
+        error
+    }
+    =
+    await client
+        .from(
+            "studentcoursetracking"
+        )
+        .select("*")
+        .eq(
+            "reg_no",
+            regNo
+        )
+        .eq(
+            "course_name",
+            courseName
+        )
+        .eq(
+            "module_name",
+            moduleName
+        )
+        .single();
+
+    if(error)
+    {
+        alert(error.message);
+        return;
+    }
+
+    document.getElementById(
+        "studentName"
+    ).innerText =
+    data.student_name;
+
+    document.getElementById(
+        "moduleName"
+    ).innerText =
+    data.module_name;
+
+    document.getElementById(
+        "courseName"
+    ).innerText =
+    data.course_name;
+
+    document.getElementById(
+        "moduleScore"
+    ).innerText =
+    data.module_score || "-";
+
+    document.getElementById(
+        "moduleResult"
+    ).innerText =
+    data.module_result || "-";
+
+    document.getElementById(
+        "certificateNo"
+    ).innerText =
+    "Certificate No : " +
+    (data.module_certificate_no || "N/A");
+
+    document.getElementById(
+        "certificateDate"
+    ).innerText =
+    data.module_certificate_date
+    ? new Date(
+        data.module_certificate_date
+      ).toLocaleDateString()
+    : "-";
+}
+
+function downloadPDF()
+{
+    const element =
+        document.getElementById(
+            "certificate"
+        );
+
+    html2pdf()
+        .set({
+            margin:0,
+            filename:
+            'Module_Certificate.pdf',
+            image:{
+                type:'jpeg',
+                quality:1
+            },
+            html2canvas:{
+                scale:2
+            },
+            jsPDF:{
+                unit:'mm',
+                format:'a4',
+                orientation:'landscape'
+            }
+        })
+        .from(element)
+        .save();
+}
+
+loadCertificate();
+
+</script>
+
+</body>
+</html>

@@ -425,7 +425,8 @@
         const loginUser = (localStorage.getItem("user") || "").trim();
         document.getElementById("loggedInUser").textContent = loginUser || "No user";
 
-        if (!loginUser) {
+        if (!loginUser) 
+        {
           showError("No logged-in student found. Please login again from login.html.");
           setWelcome("Student login not found.");
           return;
@@ -433,7 +434,8 @@
 
         const studentProfile = await fetchStudentProfile(loginUser);
 
-        if (!studentProfile) {
+        if (!studentProfile)
+         {
           showError("Student profile not found for the logged-in user. Make sure login.username matches studentprofile.mail_id.");
           setWelcome("Profile not found.");
           return;
@@ -514,7 +516,8 @@
   return byName.data || null;
 }
 
-    async function fetchStudentEnrollments(regNo, studentName) {
+    async function fetchStudentEnrollments(regNo, studentName) 
+    {
       let query = client.from("studentenrollment").select("*");
 
       if (regNo) {
@@ -528,12 +531,16 @@
       return data || [];
     }
 
-    async function fetchStudentTracking(regNo, studentName) {
+    async function fetchStudentTracking(regNo, studentName) 
+    {
       let query = client.from("studentcoursetracking").select("*");
 
-      if (regNo) {
+      if (regNo) 
+      {
         query = query.eq("reg_no", regNo);
-      } else if (studentName) {
+      } 
+      else if (studentName) 
+      {
         query = query.eq("student_name", studentName);
       }
 
@@ -542,13 +549,15 @@
       return data || [];
     }
 
-    async function fetchCourses() {
+    async function fetchCourses() 
+    {
       const { data, error } = await client.from("courses").select("*");
       if (error) throw new Error("Failed to fetch courses: " + error.message);
       return data || [];
     }
 
-    function buildDashboardData(profile, enrollments, trackingRows, courseRows) {
+    function buildDashboardData(profile, enrollments, trackingRows, courseRows)
+     {
       const coursesByName = new Map();
       courseRows.forEach(course => {
         const key = normalizeKey(course.course_name);
@@ -584,8 +593,9 @@
         const activeStatus = normalizeKey(item.student_status) !== "inactive";
         return activeStatus && !toBool(item.course_completed);
       }).length;
-
-      const certificatesCount = enrollments.filter(item => toBool(item.cerificate_issued)).length;
+      const certificatesCount_module=trackingRows.filter(item =>toBool(item.module_certificate_issued)).length;
+      const certificatesCount = certificatesCount_module+enrollments.filter(item => toBool(item.cerificate_issued)).length;
+      
 
       const allProgressValues = courseCards.map(item => item.progress);
       const averageProgress = allProgressValues.length

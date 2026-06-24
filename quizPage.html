@@ -314,103 +314,52 @@ function selectOption(element,questionId,answer)
     answers[questionId] = answer;
 }
 
-document
-.getElementById(
-    "submitBtn"
-)
-.onclick =
-async function()
+document.getElementById( "submitBtn").onclick =async function()
 {
     
+    const {data:tracking }  = await client.from("studentcoursetracking").select("*").eq("reg_no", studentRegno )
+        .eq("course_name", courseName).eq("module_name", moduleName).single();
 
-    const {
-        data:tracking
-    }
-    =
-    await client
-        .from(
-            "studentcoursetracking"
-        )
-        .select("*")
-        .eq(
-            "reg_no",
-            studentRegno
-        )
-        .eq(
-            "course_name",
-            courseName
-        )
-        .eq(
-            "module_name",
-            moduleName
-        )
-        .single();
-
-    let attempt =
-    tracking?.quiz_attempt || 0;
+    let attempt =tracking?.quiz_attempt || 0;
 
     if(attempt >= 3)
     {
-        alert(
-            "Maximum 3 attempts reached"
-        );
+        alert("Maximum 3 attempts reached");
         return;
     }
 
     let score = 0;
-
-    quizQuestions.forEach(
-        q =>
+    quizQuestions.forEach(q =>
     {
-        if(
-            answers[q.id] ===
-            q.correct_answer
-        )
+        if(answers[q.id] === q.correct_answer)
         {
             score++;
         }
     });
 
-    const percent =
-    Math.round(
-        (
-            score /
-            quizQuestions.length
-        ) * 100
-    );
-
+    const percent = Math.round(( score / quizQuestions.length ) * 100);
     attempt++;
-
-    const result =
-    percent >= 60
-    ? "PASS"
-    : "FAIL";
+    const result = percent >= 60 ? "PASS" : "FAIL";
 
     const updateData =
     {
-        quiz_attempt:
-            attempt,
-
-        quiz_mark_obtained:
-            percent + "%"
+        quiz_attempt:attempt,
+        quiz_mark_obtained:  percent + "%"
     };
 
     if(attempt === 1)
     {
-        updateData.quiz_mark_obtained_attempt1 =
-        percent + "%";
+        updateData.quiz_mark_obtained_attempt1 = percent + "%";
     }
 
     if(attempt === 2)
     {
-        updateData.quiz_mark_obtained_attempt2 =
-        percent + "%";
+        updateData.quiz_mark_obtained_attempt2 = percent + "%";
     }
 
     if(attempt === 3)
     {
-        updateData.quiz_mark_obtained_attempt3 =
-        percent + "%";
+        updateData.quiz_mark_obtained_attempt3 = percent + "%";
     }
 
     if(result === "PASS")
@@ -419,13 +368,21 @@ async function()
         updateData.module_result = "PASS";
         const moduleScore = 70 + (percent * 0.30);
         updateData.module_score = moduleScore.toFixed(0) + "%";
+        const certificateModNo ="NGL-M" + new Date().getFullYear() + "-" + String(Date.now()).slice(-5);
+        updateData.module_certificate_issued=true;
+        updateData.module_certificate_no=certificateModNo;
+        updateData.module_certificate_date=new Date().toISOString();
     }
     else
     {
         updateData.quiz_completed = false;
         if(attempt >= 3)
         {
+            updateData.quiz_completed = true;
+            const moduleScore = 70 + (percent * 0.30);
+            updateData.module_score = moduleScore.toFixed(0) + "%";
             updateData.module_result ="FAIL";
+            updateData.module_certificate_issued=false;
         }
         else
         {
@@ -502,11 +459,8 @@ Attempt : ${attempt}/3
         ).toFixed(2) + "%";
 
 
-    const studentName =
-        localStorage.getItem(
-            "studentName"
-        );
-
+    const studentName = localStorage.getItem("studentName");
+    const certificateNo ="NGL-C" + new Date().getFullYear() + "-" + String(Date.now()).slice(-6);
    
      await client.from("studentenrollment")
         .update({
@@ -514,7 +468,9 @@ Attempt : ${attempt}/3
             course_completed:true,
             mark_obtained:averageScore.toString(),
             overall_result:overallResult,
-            cerificate_issued:true
+            cerificate_issued:true,
+            certificate_no:certificateNo,
+            certificate_date:new Date().toISOString()
 
         })
         .eq("reg_no", studentRegno)

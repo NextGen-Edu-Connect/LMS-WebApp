@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Certificates</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins,sans-serif;
+}
+
+body{
+    min-height:100vh;
+    padding:30px;
+
+    background:
+    linear-gradient(
+        135deg,
+        #020617,
+        #0f172a,
+        #172554,
+        #1d4ed8
+    );
+
+    color:white;
+}
+
+.page-title{
+    text-align:center;
+    font-size:40px;
+    margin-bottom:30px;
+}
+
+.section-title{
+    font-size:28px;
+    margin-bottom:20px;
+}
+.course-card
+{
+    background:rgba(255,255,255,0.08);
+    backdrop-filter:blur(18px);
+    border-radius:24px;
+    padding:20px;
+    min-height:220px;
+}
+#courseCertificates
+{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(450px,1fr));
+    gap:20px;
+}
+
+.cert-grid{
+    display:grid;
+    grid-template-columns:
+        repeat(
+            auto-fit,
+            minmax(320px,1fr)
+        );
+    gap:20px;
+    margin-bottom:40px;
+}
+
+.cert-card
+{
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(18px);
+    border-radius: 20px;
+    padding: 20px;
+}
+
+.cert-title
+{
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.cert-info
+{
+    font-size: 15px;
+    margin-bottom: 5px;
+    color: #dbeafe;
+}
+
+.btn-row
+{
+    display:flex;
+    gap:10px;
+    margin-top:15px;
+}
+
+.btn
+{
+    padding:12px;
+    border:none;
+    border-radius:12px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+}
+
+.view-btn{
+    background:#2563eb;
+}
+
+.download-btn{
+    background:#16a34a;
+}
+
+.empty{
+    text-align:center;
+    color:#cbd5e1;
+    padding:20px;
+}
+
+.back-btn{
+    display:inline-block;
+    margin-bottom:25px;
+    cursor:pointer;
+}
+
+</style>
+</head>
+<body>
+
+
+<h1 class="page-title">🎓 My Certificates</h1>
+<h2 class="section-title"> 📚 Module Certificates</h2>
+<div id="moduleCertificates"  class="cert-grid"></div>
+<h2 class="section-title">    🏆 Course Certificates</h2>
+<div id="courseCertificates"  class="cert-grid"></div>
+<script>
+
+const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
+const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
+const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
+
+const studentRegno =localStorage.getItem("user");
+
+async function loadCertificates()
+{
+    loadModuleCertificates();
+    loadCourseCertificates();
+}
+
+async function loadModuleCertificates()
+{
+    const { data, error } = await client.from("studentcoursetracking")
+        .select("*").eq("reg_no",studentRegno).eq("module_certificate_issued",true);
+
+    if(error)
+    {
+        console.log(error);
+        return;
+    }
+
+    let html = "";
+
+    if(!data || data.length === 0)
+    {
+        html =
+        `
+        <div class="empty">
+            No Module Certificates Available
+        </div>
+        `;
+    }
+    else
+    {
+        data.forEach(item =>
+        {
+            html += `
+            <div class="cert-card">
+                <div class="cert-title">
+                    ${item.module_name}
+                </div>
+                <div class="cert-info">
+                    Course : ${item.course_name}
+                </div>
+
+                <div class="cert-info">
+                    Score : ${item.module_score}
+                </div>
+
+                <div class="cert-info">
+                    Result : ${item.module_result}
+                </div>
+
+                <div class="btn-row">
+                    <button  class="btn download-btn"
+                        onclick="viewModuleCertificate('${item.course_name}', '${item.module_name}' )">
+                        📜 View & Download
+                    </button>
+
+                </div>
+
+            </div>
+            `;
+        });
+    }
+
+    document .getElementById( "moduleCertificates").innerHTML = html;
+}
+
+async function loadCourseCertificates()
+{
+    const { data, error} =  await client.from( "studentenrollment").select("*").eq( "reg_no",studentRegno)
+        .eq( "course_completed", true);
+
+    if(error)
+    {
+        console.log(error);
+        return;
+    }
+
+    let html = "";
+
+    if(!data || data.length === 0)
+    {
+        html = `
+        <div class="empty">
+            No Course Certificates Available
+        </div>
+        `;
+    }
+    else
+    {
+        data.forEach(item =>
+        {
+            html +=
+            `
+            <div class="cert-card">
+                <div class="cert-title">
+                    ${item.course_name}
+                </div>
+
+                <div class="cert-info">
+                    Average Score : ${item.mark_obtained}
+                </div>
+
+                <div class="cert-info">
+                    Result : ${item.overall_result}
+                </div>
+
+                <div class="cert-info">
+                    Certificate No :${item.certificate_no}
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn download-btn"
+                        onclick="viewCourseCertificate('${item.course_name}')">
+                        📜 View & Download
+                    </button>
+
+                </div>
+
+            </div>
+            `;
+        });
+    }
+
+    document.getElementById("courseCertificates").innerHTML =  html;
+}
+
+function viewModuleCertificate(courseName, moduleName)
+{
+    location.href = "moduleCertificate.html"+"?regNo="+studentRegno+ "&course="+encodeURIComponent(courseName)+"&module="+ encodeURIComponent(moduleName);
+}
+
+function viewCourseCertificate(courseName)
+{
+    location.href = "courseCertificate.html"+"?regNo="+studentRegno+"&course="+ encodeURIComponent(courseName);
+}
+
+loadCertificates();
+
+</script>
+
+</body>
+</html>
