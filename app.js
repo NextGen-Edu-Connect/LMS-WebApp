@@ -18,7 +18,6 @@ window.onload = function ()
 
 window.showPage = function(pageId,element)
  {
-
     document.querySelectorAll(".page").forEach(page => {page.classList.remove("active");});
     document.querySelectorAll(".menu-item").forEach(item => {item.classList.remove("active");});
 
@@ -41,6 +40,23 @@ window.searchTable = function (input,tableId)
     });
 };
 
+function togglePassword()
+{
+    const password = document.getElementById("password");
+    const eye = document.getElementById("toggleEye");
+
+    if (password.type === "password")
+    {
+        password.type = "text";
+        eye.classList.replace("fa-eye", "fa-eye-slash");
+    }
+    else
+    {
+        password.type = "password";
+        eye.classList.replace("fa-eye-slash", "fa-eye");
+    }
+}
+
 
 window.selectRole = function (element, role) 
 {
@@ -59,73 +75,468 @@ window.doLogin = async function ()
     await login(username,password,role);
 };
 
-async function login(username,password,role)
+async function login(username, password, role)
 {
+    const { data, error } = await client
+        .from("login")
+        .select("*")
+        .eq("username", username)
+        .eq("password", password)
+        .eq("role", role);
 
-    const { data, error } = await client.from("login").select("*").eq("username", username).eq("password", password).eq("role",role);
-    if (error) 
+    if (error)
     {
-        document.getElementById("msg").innerHTML =error.message;
+        document.getElementById("msg").innerHTML = error.message;
         return;
     }
 
-    if (data.length === 0) 
+    if (data.length === 0)
     {
         document.getElementById("msg").innerHTML = "Invalid Username or Password";
         return;
     }
 
     const user = data[0];
-    localStorage.setItem("user",username);
-    localStorage.setItem("role",user.role);
+
+    // Student enrollment check
+    if (user.role === "Student" && user.user_status !== "Enrolled")
+    {
+        document.getElementById("msg").innerHTML = "Your account is not enrolled yet. Please contact your tutor or administrator.";
+        return;
+    }
+
+    localStorage.setItem("user", username);
+    localStorage.setItem("role", user.role);
 
     /* ROLE BASED REDIRECT */
 
     if (user.role === "Admin")
     {
-        window.location ="admin.html";
+        window.location = "admin.html";
     }
     else if (user.role === "Tutor")
     {
-        window.location ="tutor.html";
+        window.location = "tutor.html";
     }
-    else if(user.role === "Student")
+    else if (user.role === "Student")
     {
-        window.location ="student.html";
+        window.location = "student.html";
     }
 }
 
 /* CREATE USER */
 
-window.createUser = async function () 
+async function createUser()
 {
-    const username =document.getElementById("newUsername").value;
-    const password=document.getElementById("newPassword").value;
-    const role =document.getElementById("newRole").value;
-    const { error } =
-        await client
-            .from("login")
-            .insert([
-                {
-                    username,
-                    password,
-                    role
-                }
-            ]);
+    const username = document.getElementById("newUsername").value.trim();
+    const password = document.getElementById("newPassword").value.trim();
+    const role = document.getElementById("newRole").value;
 
-    if (error) 
+    if (!username || !password)
     {
-        showMessage(error.message);
+        showMessage("Please enter username and password");
         return;
     }
 
-    /* CLEAR FIELDS */
+    // Check duplicate username
+    const { data: existingUser, error: checkError } = await client
+        .from("login")
+        .select("id")
+        .eq("username", username)
+        .maybeSingle();
+
+    if (checkError)
+    {
+        showMessage(checkError.message);
+        return;
+    }
+
+    if (existingUser)
+    {
+        alert("Username already exists");
+        return;
+    }
+
+    // Insert user
+    const { error } = await client
+        .from("login")
+        .insert([
+        {
+            username: username,
+            password: password,
+            role: role,
+            user_status: "Registered"
+        }
+        ]);
+
+    if (error)
+    {
+        alert(error.message);
+        return;
+    }
+
+    alert("User created successfully");
 
     document.getElementById("newUsername").value = "";
     document.getElementById("newPassword").value = "";
     document.getElementById("newRole").selectedIndex = 0;
-    alert("User Created Successfully");
+}
+// window.bulkCreateUsers = async function ()
+// {
+//     const file = document.getElementById("studentFile").files[0];
+//     if (!file)
+//     {
+//         showMessage("Please select an Excel file");
+//         return;
+//     }
+//     try
+//     {
+//         // Read Excel File
+//         const data = await file.arrayBuffer();
+//         const workbook = XLSX.read(data, { type: "array" });
+//         const worksheet =workbook.Sheets[workbook.SheetNames[0]];
+//         const students =XLSX.utils.sheet_to_json(worksheet);
+//         if (students.length === 0)
+//         {
+//             showMessage("Excel file is empty");
+//             return;
+//         }
+
+//         // Get existing Reg Nos
+//         const { data: existingStudents, error: fetchError } = await client.from("studentprofile").select("reg_no");
+//         if (fetchError)
+//         {
+//             showMessage(fetchError.message);
+//             return;
+//         }
+
+//         const existingRegNos = new Set(existingStudents.map(x => x.reg_no));
+
+//         const loginUsers = [];
+//         const studentProfiles = [];
+//         const duplicateRegNos = [];
+//         console.log(existingStudents);
+//         console.log(fetchError);
+//         students.forEach(student =>
+//         {
+//             const reg_no = String(student.reg_no).trim();
+//             if (existingRegNos.has(reg_no))
+//             {
+//                 duplicateRegNos.push(reg_no);
+//                 return;
+//             }
+
+//             loginUsers.push({
+//                 username: reg_no,
+//                 password: String(student.DOB || ""),
+//                 role: "Student",
+//                 user_status: "Registered"
+//             });
+
+//             studentProfiles.push({
+//                 reg_no: reg_no,
+//                 student_name: student.student_name || null,
+//                 mail_id: student.mail_id || null,
+//                 phone_no: student.phone_no || null,
+//                 gender: student.gender || null,
+//                 department: student.department || null,
+//                 college_name: student.college_name || null,
+//                 college_code: student.college_code || null,
+//                 district: student.district || null,
+//                 university: student.university || null,
+//                 student_status: student.student_status || "Registered"
+//             });
+//         });
+
+//         // Nothing to insert
+//         if (studentProfiles.length === 0)
+//         {
+//             showMessage("All uploaded students already exist.");
+//             return;
+//         }
+
+//         // Insert Login Records
+//         const { error: loginError } =await client.from("login").insert(loginUsers);
+//         if (loginError)
+//         {
+//             showMessage(loginError.message);
+//             return;
+//         }
+
+//         // Insert Student Profiles
+//         const { error: profileError } = await client.from("studentprofile").insert(studentProfiles);
+
+//         if (profileError)
+//         {
+//             if (profileError.message.includes("studentenrollment_mail_id_key"))
+//             {
+//                 showMessage("Duplicate Mail ID already exists");
+//             }
+//             else
+//             {
+//                 showMessage(error.message);
+//             }
+//             await client.from("login").delete().in("username", loginUsers.map(x => x.username));
+//             return;
+//         }
+
+//         document.getElementById("bulkSummaryCard").style.display = "block";
+//         document.getElementById("totalCount").innerText = students.length;
+//         document.getElementById("uploadedCount").innerText = studentProfiles.length;
+//         document.getElementById("duplicateCount").innerText = duplicateRegNos.length;
+//         document.getElementById("failedCount").innerText = 0;
+
+//         if (duplicateRegNos.length > 0)
+//         {
+//             document.getElementById("duplicateRegs").innerText = duplicateRegNos.join(", ");
+//         }
+//         else
+//         {
+//             document.getElementById("duplicateRegs").innerText ="No duplicate register numbers found";
+//         }
+
+//     }
+//     catch (err)
+//     {
+//         showMessage(err.message);
+//     }
+// };
+
+window.bulkCreateUsers = async function ()
+{
+    const file = document.getElementById("studentFile").files[0];
+
+    if (!file)
+    {
+        showMessage("Please select an Excel file");
+        return;
+    }
+
+    try
+    {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data, { type: "array" });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const students = XLSX.utils.sheet_to_json(worksheet);
+
+        if (students.length === 0)
+        {
+            showMessage("Excel file is empty");
+            return;
+        }
+
+        const { data: existingProfiles, error: fetchError } =
+            await client
+                .from("studentprofile")
+                .select("reg_no, mail_id");
+
+        if (fetchError)
+        {
+            showMessage(fetchError.message);
+            return;
+        }
+
+        const existingRegNos =
+            new Set(
+                existingProfiles.map(
+                    x => String(x.reg_no).trim()
+                )
+            );
+
+        const existingMailIds =
+            new Set(
+                existingProfiles
+                    .filter(x => x.mail_id)
+                    .map(
+                        x =>
+                            x.mail_id
+                                .toLowerCase()
+                                .trim()
+                    )
+            );
+
+        const loginUsers = [];
+        const studentProfiles = [];
+        const uploadReport = [];
+
+        students.forEach(student =>
+        {
+            const reg_no =
+                String(student.reg_no || "").trim();
+
+            const mail_id =
+                String(student.mail_id || "")
+                    .trim()
+                    .toLowerCase();
+
+            if (existingRegNos.has(reg_no))
+            {
+                uploadReport.push({
+                    reg_no,
+                    mail_id,
+                    status: "Duplicate Register Number"
+                });
+
+                return;
+            }
+
+            if (
+                mail_id &&
+                existingMailIds.has(mail_id)
+            )
+            {
+                uploadReport.push({
+                    reg_no,
+                    mail_id,
+                    status: "Duplicate Mail ID"
+                });
+
+                return;
+            }
+
+            loginUsers.push({
+                username: reg_no,
+                password: String(student.DOB || ""),
+                role: "Student",
+                user_status: "Registered"
+            });
+
+            studentProfiles.push({
+                reg_no: reg_no,
+                student_name: student.student_name || null,
+                mail_id: student.mail_id || null,
+                phone_no: student.phone_no || null,
+                gender: student.gender || null,
+                department: student.department || null,
+                college_name: student.college_name || null,
+                college_code: student.college_code || null,
+                district: student.district || null,
+                university: student.university || null,
+                student_status:
+                    student.student_status ||
+                    "Registered"
+            });
+
+            uploadReport.push({
+                reg_no,
+                mail_id,
+                status: "Success"
+            });
+
+            existingRegNos.add(reg_no);
+
+            if (mail_id)
+            {
+                existingMailIds.add(mail_id);
+            }
+        });
+
+        if (studentProfiles.length > 0)
+        {
+            const { error: loginError } =
+                await client
+                    .from("login")
+                    .insert(loginUsers);
+
+            if (loginError)
+            {
+                showMessage(loginError.message);
+                return;
+            }
+
+            const { error: profileError } =
+                await client
+                    .from("studentprofile")
+                    .insert(studentProfiles);
+
+            if (profileError)
+            {
+                await client
+                    .from("login")
+                    .delete()
+                    .in(
+                        "username",
+                        loginUsers.map(
+                            x => x.username
+                        )
+                    );
+
+                showMessage(profileError.message);
+                return;
+            }
+        }
+
+        const successCount =
+            uploadReport.filter(
+                x => x.status === "Success"
+            ).length;
+
+        const duplicateCount =
+            uploadReport.filter(
+                x =>
+                    x.status ===
+                        "Duplicate Register Number" ||
+                    x.status ===
+                        "Duplicate Mail ID"
+            ).length;
+
+        document.getElementById("bulkSummaryCard").style.display = "block";
+
+        document.getElementById("totalCount").innerText =
+            students.length;
+
+        document.getElementById("uploadedCount").innerText =
+            successCount;
+
+        document.getElementById("duplicateCount").innerText =
+            duplicateCount;
+
+        document.getElementById("failedCount").innerText =
+            duplicateCount;
+
+        const duplicateRecords =
+            uploadReport.filter(
+                x => x.status !== "Success"
+            );
+
+        document.getElementById("duplicateRegs").innerHTML =
+            duplicateRecords.length > 0
+                ? duplicateRecords
+                      .map(
+                          x =>
+                              `<div>
+                                  <b>${x.reg_no}</b>
+                                  - ${x.mail_id}
+                                  - ${x.status}
+                               </div>`
+                      )
+                      .join("")
+                : "No duplicate records found";
+
+        showMessage("Bulk upload completed successfully");
+    }
+    catch (err)
+    {
+        console.error(err);
+        showMessage(err.message);
+    }
 };
+
+function resetBulkUpload()
+{
+    // Hide summary report
+    document.getElementById("bulkSummaryCard").style.display = "none";
+    // Clear file selection
+    document.getElementById("studentFile").value = "";
+    // Reset counters
+    document.getElementById("totalCount").innerText = "0";
+    document.getElementById("uploadedCount").innerText = "0";
+    document.getElementById("duplicateCount").innerText = "0";
+    document.getElementById("failedCount").innerText = "0";
+    // Clear duplicate list
+    document.getElementById("duplicateRegs").innerText = "None";
+}
+
 
 /* LOAD USERS */
 
@@ -1495,12 +1906,12 @@ window.loadStudentCourses =
 
 
 
-// function showMessage(msg) {
+function showMessage(msg) {
 
-//     document.getElementById(
-//         "adminMsg"
-//     ).innerHTML = msg;
-// }
+    document.getElementById(
+        "adminMsg"
+    ).innerHTML = msg;
+}
 
 // /* LOAD COURSE DROPDOWN FOR QUIZ */
 

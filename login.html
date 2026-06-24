@@ -434,8 +434,29 @@
             color: #ff9b9b;
         }
 
-    </style>
+        .password-wrapper {
+    position: relative;
+}
 
+.password-wrapper input {
+    width: 100%;
+    padding-right: 45px;
+    box-sizing: border-box;
+}
+
+.password-wrapper #toggleEye {
+    position: absolute;
+    right: 18px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #cfd8dc;
+    font-size: 18px;
+}
+
+    </style>
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 
 <body>
@@ -549,13 +570,15 @@
 
         <!-- PASSWORD -->
 
-        <div class="input-group">
+    <div class="input-group password-wrapper">
+    <input type="password"
+           id="password"
+           placeholder="Enter Password">
 
-            <input type="password"
-                   id="password"
-                   placeholder="Enter Password">
-
-        </div>
+    <i id="toggleEye"
+       class="fa-solid fa-eye"
+       onclick="togglePassword()"></i>
+</div>
 
         <!-- LOGIN BUTTON -->
 

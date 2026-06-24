@@ -185,10 +185,13 @@ video{
 <body>
 
 <div class="back-btn"
-     onclick="history.back()">
-
+     onclick="
+     location.href=
+     'coursePage.html?course_name=' +
+     encodeURIComponent(
+         localStorage.getItem('selectedCourseName')
+     )">
     ← Back
-
 </div>
 
 <div class="main-card">
@@ -233,137 +236,144 @@ const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
 
 const params =new URLSearchParams(window.location.search);
 
-const moduleId =
-params.get("id");
-
-const courseId =
-params.get("course");
-
+const moduleId =params.get("id");
+const courseId =params.get("course");
 let quizId = "";
+const video =document.getElementById("videoPlayer");
+const studentRegno =localStorage.getItem("user");
 
 async function loadModule()
 {
     /* LOAD MODULE */
-
-    const {
-        data,
-        error
-    } =
-    await client
-        .from(
-            "videos"
-        )
-        .select("*")
-        .eq(
-            "id",
-            moduleId
-        )
-        .single();
+    const { data,error} =await client.from("videos").select("*").eq("id",moduleId).single();
 
     if(error)
     {
-        console.log(
-            error
-        );
+        console.log(error);
         return;
     }
 
     /* LOAD COURSE */
 
-    const {
-        data:course,
-        error:courseError
-    }
-    =
-    await client
-        .from(
-            "courses"
-        )
-        .select("*")
-        .eq(
-            "id",
-            courseId
-        )
-        .single();
+    const { data:course, error:courseError}= await client.from("courses").select("*").eq("id",courseId).single();
 
     if(courseError)
     {
-        console.log(
-            courseError
-        );
+        console.log(courseError);
         return;
     }
 
     /* STORE VALUES */
 
-    window.moduleName =
-    data.module_name;
-
-    window.courseName =
-    course.title;
-
-    quizId =
-    data.quiz_id;
+    window.moduleName =data.module_name;
+    window.courseName =  course.course_name;
+    quizId = data.quiz_id;
 
     /* UI */
+    document.getElementById("moduleTitle").innerHTML =  data.module_name;
+    document.getElementById("videoPlayer").src = data.video_url;
 
-    document
-    .getElementById(
-        "moduleTitle"
-    ).innerHTML =
-    data.module_name;
+    /* TRACKING */
+    const {data: tracking,error: trackingError}=await client
+    .from("studentcoursetracking").select("video_lastwatched,video_completed")
+    .eq("reg_no",studentRegno).eq("course_name",course.course_name).eq("module_name",data.module_name).maybeSingle();
+    console.log("Tracking:",tracking);
+    video.load();
 
-    document
-    .getElementById(
-        "videoPlayer"
-    ).src =
-    data.video_url;
+/* RESUME VIDEO */
+    video.addEventListener("loadedmetadata",function()
+    {
+        if (tracking &&tracking.video_lastwatched && parseFloat(tracking.video_lastwatched) > 0)
+        {
+            const lastPosition =parseFloat(tracking.video_lastwatched);
+            console.log("Resume Position:",lastPosition);
+            video.currentTime =lastPosition;
+        }
+    },{ once: true }
+);
+
+/* QUIZ BUTTON */
+
+    if (tracking && tracking.video_completed)
+    {
+        enableQuizButton();
+    }
 }
 
-document
-.getElementById(
-    "videoPlayer"
-)
-.onended =
-function()
+setInterval(async function()
 {
-    const btn =
-    document.getElementById(
-        "quizBtn"
-    );
+    if(video.paused || !video.duration)
+    {
+        return;
+    }
+    const percentage =Math.round((video.currentTime / video.duration) * 100);
+    const moduleScore=(Math.round(percentage*0.7)).toString()+"%";
+    await client.from("studentcoursetracking").update({
+            video_lastwatched:video.currentTime.toString(),
+            module_score:moduleScore
+        }).eq("reg_no",studentRegno).eq("course_name",courseName).eq("module_name", moduleName);},5000);
 
-    btn.disabled =
-    false;
-
-    btn.classList.add(
-        "enabled"
-    );
-
-    btn.innerHTML =
-    "📝 Start Quiz";
-
-   btn.onclick =
-function()
+video.addEventListener("pause",async function()
 {
-    location.href =
+    if(!video.duration)
+    {
+        return;
+    }
+    const percentage =Math.round((video.currentTime /video.duration) * 100);
+    const moduleScore=(Math.round(percentage*0.7)).toString()+"%";
+    
+    await client.from("studentcoursetracking").update({
+            video_lastwatched: video.currentTime.toString(),
+            module_score:moduleScore
+        }).eq("reg_no",studentRegno).eq("course_name",courseName).eq("module_name",moduleName );});
 
-    "quizPage.html"+
-    "?quiz="+quizId+
-    "&module="+moduleId+
-    "&course="+courseId+
-    "&moduleName="+
-    encodeURIComponent(
-        moduleName
-    )+
-    "&courseName="+
-    encodeURIComponent(
+video.onended =
+async function()
+{
+    await client.from("studentcoursetracking").update({
+        video_completed:true,
+        video_lastwatched: video.duration.toString(),
+        quiz_availble:true
+    }).eq(
+        "reg_no",
+        studentRegno
+    )
+    .eq(
+        "course_name",
         courseName
+    )
+    .eq(
+        "module_name",
+        moduleName
     );
-};
+
+    enableQuizButton();
 };
 
+function enableQuizButton()
+{
+    const btn =document.getElementById("quizBtn");
+    btn.disabled = false;
+    btn.classList.add("enabled");
+    btn.innerHTML ="📝 Start Quiz";
+    btn.onclick = function()
+    {
+        location.href =
+        "quizPage.html"+
+        "?quiz="+quizId+
+        "&module="+moduleId+
+        "&course="+courseId+
+        "&moduleName="+
+        encodeURIComponent(
+            moduleName
+        )+
+        "&courseName="+
+        encodeURIComponent(
+            courseName
+        );
+    };
+}
 loadModule();
-
 </script>
 
 </body>

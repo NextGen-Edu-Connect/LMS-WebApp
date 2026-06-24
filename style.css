@@ -477,3 +477,23 @@ video {
 
     transform: rotate(90deg);
 }
+
+.password-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-wrapper input {
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 45px;
+}
+
+.password-wrapper #toggleEye {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #666;
+}

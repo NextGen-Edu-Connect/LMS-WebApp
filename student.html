@@ -183,6 +183,21 @@ body{
     background:transparent;
 }
 
+.profile{
+    display:flex;
+    align-items:center;
+    gap:12px;
+}
+
+.user-info{
+    color:white;
+    font-size:16px;
+    font-weight:600;
+    background:rgba(255,255,255,0.1);
+    padding:10px 16px;
+    border-radius:12px;
+}
+
 </style>
 
 </head>
@@ -222,9 +237,11 @@ body{
                     Continue your learning journey
                 </p>
             </div>
-            <div class="profile">
-                <img src="">
-            </div>
+         <div class="profile">
+    <div class="user-info">
+        <span id="studentName">Loading...</span>
+    </div>
+</div>
         </div>
 
         <!-- PAGE CONTENT -->
@@ -235,11 +252,57 @@ body{
         </main>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
 <script>
+        const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
+        const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
+
+        const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", async () =>
+{
+    try
+    {
+        const regNo = localStorage.getItem("user");
+
+        console.log("Logged In User:", regNo);
+
+        if (!regNo)
+        {
+            document.getElementById("studentName").innerText = "Student";
+            return;
+        }
+
+        const { data, error } = await client
+            .from("studentprofile")
+            .select("student_name")
+            .eq("reg_no", regNo)
+            .single();
+
+        console.log("Student Data:", data);
+        console.log("Error:", error);
+
+        if (error)
+        {
+            document.getElementById("studentName").innerText = regNo;
+            return;
+        }
+
+        document.getElementById("studentName").innerText =data.student_name;
+        localStorage.setItem("studentName", data.student_name);
+    }
+    catch (err)
+    {
+        console.error(err);
+    }
+});
 
 function loadPage(page, element)
 {
     document.getElementById("contentFrame").src = page;
+
     document.querySelectorAll(".sidebar li")
         .forEach(item =>
         {
@@ -251,8 +314,12 @@ function loadPage(page, element)
 
 function logout()
 {
-    window.location.href ="login.html";
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+
+    window.location.href = "login.html";
 }
+
 </script>
 </body>
 </html>

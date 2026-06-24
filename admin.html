@@ -9,6 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         * {
@@ -269,26 +271,33 @@
         option {
             color: black;
         }
+        .btn-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+}
+
 
         /* BUTTON */
         .btn {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 16px;
-            background:
-                linear-gradient(
-                    135deg,
-                    #2563eb,
-                    #60a5fa
-                );
+    padding: 16px 24px;
+    border: none;
+    border-radius: 16px;
+    background: linear-gradient(
+        135deg,
+        #2563eb,
+        #60a5fa
+    );
 
-            color: white;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-        }
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+
+    width: auto;
+    min-width: 180px;
+}
 
         .btn:hover {
             transform: translateY(-2px);
@@ -457,6 +466,160 @@
             margin-top: 20px;
             color: #93c5fd;
         }
+
+        .bulk-summary-card
+{
+    margin-top: 25px;
+    padding: 25px;
+    border-radius: 15px;
+
+    background: rgba(255,255,255,0.08);
+
+    backdrop-filter: blur(10px);
+
+    box-shadow: 0px 4px 20px rgba(0,0,0,0.3);
+}
+
+.bulk-summary-card h2
+{
+    margin-bottom: 20px;
+    color: white;
+}
+
+.summary-grid
+{
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fit,minmax(180px,1fr));
+
+    gap: 20px;
+}
+
+.summary-box
+{
+    padding: 20px;
+
+    border-radius: 12px;
+
+    text-align: center;
+
+    background: rgba(255,255,255,0.08);
+}
+
+.summary-label
+{
+    display: block;
+
+    font-size: 15px;
+
+    color: #d9d9d9;
+
+    margin-bottom: 10px;
+}
+
+.summary-value
+{
+    font-size: 36px;
+
+    font-weight: bold;
+
+    color: white;
+}
+
+.success
+{
+    border-left: 5px solid #2ecc71;
+}
+
+.warning
+{
+    border-left: 5px solid #f1c40f;
+}
+
+.error
+{
+    border-left: 5px solid #e74c3c;
+}
+
+.duplicate-section
+{
+    margin-top: 25px;
+}
+
+.duplicate-section h3
+{
+    margin-bottom: 10px;
+
+    color: white;
+}
+
+.duplicate-list
+{
+    padding: 15px;
+
+    border-radius: 10px;
+
+    background: rgba(0,0,0,0.2);
+
+    color: #ffffff;
+
+    max-height: 150px;
+
+    overflow-y: auto;
+
+    word-break: break-word;
+}
+
+.bulk-header
+{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    margin-bottom: 25px;
+}
+
+.refresh-btn
+{
+    width: 40px;
+    height: 40px;
+
+    margin-right: 15px;   /* move away from right edge */
+    margin-top: 5px;      /* move slightly down */
+
+    border: none;
+    border-radius: 50%;
+
+    background: linear-gradient(
+        135deg,
+        #2563eb,
+        #60a5fa
+    );
+
+    color: white;
+    font-size: 16px;
+
+    cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    transition: 0.3s;
+}
+
+.refresh-btn:hover
+{
+    transform: rotate(180deg);
+}
+
+.refresh-btn:hover
+{
+    transform: rotate(180deg);
+    box-shadow:
+        0 8px 20px rgba(37,99,235,0.4);
+}
     </style>
 </head>
 
@@ -541,41 +704,104 @@
 
             <!-- CREATE USER -->
 
-            <div class="page active" id="createUserPage">
-                <div class="card">
-                    <div class="card-title">
-                        Create User
-                    </div>
-                    <div class="input-group">
-                        <input type="text"
-                               id="newUsername"
-                               placeholder="Username">
+<div class="page active" id="createUserPage">
+    <div class="card">
+        <div class="card-title">
+            Create User
+        </div>
 
-                    </div>
+        <div class="input-group">
+            <input type="text" id="newUsername" placeholder="Username" autocomplete="off">
+        </div>
 
-                    <div class="input-group">
+        <div class="input-group">
+            <input type="password" id="newPassword" placeholder="Password" autocomplete="new-password">
+        </div>
 
-                        <input type="password"
-                               id="newPassword"
-                               placeholder="Password">
-                    </div>
+        <div class="input-group">
+            <select id="newRole">
+                <option value="Student">Student</option>
+                <option value="Tutor">Tutor</option>
+            </select>
+        </div>
+        <div class="btn-container">
+            <button class="btn" onclick="createUser()">
+                Create User
+            </button>
+        </div>
+    </div>
 
-                    <div class="input-group">
-                        <select id="newRole">
-                           <option value="Student">
-                                Student
-                            </option>
-                            <option value="Tutor">
-                                Tutor
-                            </option>
-                        </select>
-                    </div>
-                    <button class="btn"
-                            onclick="createUser()">
-                        Create User
-                    </button>
+    <!-- BULK User Creation -->
+
+    <div class="card" style="margin-top:20px;">
+         <div class="bulk-header">
+        <h2>Bulk Create User</h2>
+
+        <button class="refresh-btn"
+                onclick="resetBulkUpload()"
+                title="Refresh">
+            <i class="fa-solid fa-rotate-right"></i>
+        </button>
+    </div>
+
+        <div class="input-group">
+            <input type="file" id="studentFile" accept=".xlsx,.xls">
+        </div>
+
+         <p style="font-size:14px;">
+        Upload xlsx file containing:
+        Username, Password, Role
+    </p>
+
+         <div class="btn-container">
+            <button class="btn"
+                    onclick="bulkCreateUsers()">
+                Upload & Create Users
+            </button>
+    </div>
+    
+
+    <div class="bulk-summary-card" id="bulkSummaryCard" style="display:none;">
+
+    <h2>📊 Bulk Upload Report</h2>
+
+        <div class="summary-grid">
+
+                <div class="summary-box">
+                    <span class="summary-label">Total Records</span>
+                    <span class="summary-value" id="totalCount">0</span>
+                </div>
+
+                <div class="summary-box success">
+                    <span class="summary-label">Successfully Added</span>
+                    <span class="summary-value" id="uploadedCount">0</span>
+                </div>
+
+                <div class="summary-box warning">
+                    <span class="summary-label">Already Exists</span>
+                    <span class="summary-value" id="duplicateCount">0</span>
+                </div>
+
+                <div class="summary-box error">
+                    <span class="summary-label">Failed</span>
+                    <span class="summary-value" id="failedCount">0</span>
+                </div>
+
+        </div>
+
+            <div class="duplicate-section">
+                <h3>Duplicate Register Numbers</h3>
+
+                <div id="duplicateRegs" class="duplicate-list">
+                    None
                 </div>
             </div>
+
+</div>
+</div>
+</div>
+
+
 
             <!-- ADD COURSE -->
 

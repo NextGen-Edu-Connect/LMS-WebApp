@@ -1,0 +1,510 @@
+<!-- studentcertificatePage.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Certificates</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Poppins", sans-serif;
+    }
+
+    body {
+      background: transparent;
+      color: white;
+      padding: 30px;
+      min-height: 100vh;
+    }
+
+    .certificates-header {
+      margin-bottom: 30px;
+    }
+
+    .certificates-header h2 {
+      font-size: 28px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .certificates-header p {
+      color: #94a3b8;
+      margin-top: 5px;
+    }
+
+    .certificate-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 25px;
+    }
+
+    .certificate-card {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 25px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .certificate-card:hover {
+      transform: translateY(-5px);
+      background: rgba(255, 255, 255, 0.12);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .certificate-icon {
+      font-size: 40px;
+      margin-bottom: 15px;
+    }
+
+    .certificate-card h3 {
+      color: white;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .certificate-card .course-code {
+      color: #94a3b8;
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .certificate-card .date {
+      color: #64748b;
+      font-size: 13px;
+      margin-bottom: 15px;
+    }
+
+    .certificate-card .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 15px;
+    }
+
+    .status-badge.issued {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+    }
+
+    .status-badge.pending {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+
+    .status-badge.not-started {
+      background: rgba(148, 163, 184, 0.2);
+      color: #94a3b8;
+    }
+
+    .certificate-details {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 10px 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .certificate-details .label {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .certificate-details .value {
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .download-btn {
+      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+
+    .download-btn:hover {
+      transform: scale(1.02);
+      box-shadow: 0 5px 15px rgba(37, 99, 235, 0.4);
+    }
+
+    .download-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .no-certificates {
+      text-align: center;
+      padding: 60px 20px;
+      color: #94a3b8;
+    }
+
+    .no-certificates .icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+    }
+
+    .no-certificates h3 {
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 50px;
+      color: #94a3b8;
+    }
+
+    .spinner {
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .message-card {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 22px;
+      color: #e2e8f0;
+      backdrop-filter: blur(18px);
+      margin-top: 10px;
+    }
+
+    .message-card.error {
+      background: rgba(239, 68, 68, 0.18);
+      color: #ffe4e6;
+    }
+
+    .message-card.empty {
+      background: rgba(255, 255, 255, 0.06);
+      color: #dbeafe;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 18px;
+      }
+
+      .certificate-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="certificates-header">
+    <h2>📜 My Certificates</h2>
+    <p>Track and download your course completion certificates</p>
+  </div>
+
+  <div id="errorBox" class="message-card error hidden"></div>
+
+  <div id="certificatesContainer">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading your certificates...</p>
+    </div>
+  </div>
+
+  <script>
+    // Supabase Configuration
+    const SUPABASE_URL = "https://akodraeqesulsofaanna.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    document.addEventListener("DOMContentLoaded", initCertificates);
+
+    async function initCertificates() {
+      try {
+        const loginUser = (localStorage.getItem("user") || "").trim();
+
+        if (!loginUser) {
+          showError("No logged-in student found. Please login again.");
+          return;
+        }
+
+        // Fetch student profile
+        const studentProfile = await fetchStudentProfile(loginUser);
+
+        if (!studentProfile) {
+          showError("Student profile not found.");
+          return;
+        }
+
+        const regNo = studentProfile.reg_no || "";
+        const studentName = studentProfile.student_name || "Student";
+
+        // Fetch enrollments and courses
+        const [enrollments, courses] = await Promise.all([
+          fetchStudentEnrollments(regNo, studentName),
+          fetchCourses()
+        ]);
+
+        // Process certificates data
+        const certificatesData = processCertificates(enrollments, courses);
+
+        // Render certificates
+        renderCertificates(certificatesData);
+
+      } catch (error) {
+        console.error("Certificate error:", error);
+        showError(error.message || "Failed to load certificates.");
+      }
+    }
+
+    async function fetchStudentProfile(loginUser) {
+      let { data, error } = await client
+        .from("studentprofile")
+        .select("*")
+        .eq("mail_id", loginUser)
+        .maybeSingle();
+
+      if (error) {
+        throw new Error("Failed to fetch student profile: " + error.message);
+      }
+
+      if (data) return data;
+
+      // Try by reg_no
+      let fallback = await client
+        .from("studentprofile")
+        .select("*")
+        .eq("reg_no", loginUser)
+        .maybeSingle();
+
+      if (fallback.error) {
+        throw new Error("Failed to fetch student profile by reg_no: " + fallback.error.message);
+      }
+
+      if (fallback.data) return fallback.data;
+
+      // Try by student_name
+      let byName = await client
+        .from("studentprofile")
+        .select("*")
+        .eq("student_name", loginUser)
+        .maybeSingle();
+
+      if (byName.error) {
+        throw new Error("Failed to fetch student profile by student_name: " + byName.error.message);
+      }
+
+      return byName.data || null;
+    }
+
+    async function fetchStudentEnrollments(regNo, studentName) {
+      let query = client.from("studentenrollment").select("*");
+
+      if (regNo) {
+        query = query.eq("reg_no", regNo);
+      } else if (studentName) {
+        query = query.eq("student_name", studentName);
+      }
+
+      const { data, error } = await query;
+      if (error) throw new Error("Failed to fetch enrollment data: " + error.message);
+      return data || [];
+    }
+
+    async function fetchCourses() {
+      const { data, error } = await client.from("courses").select("*");
+      if (error) throw new Error("Failed to fetch courses: " + error.message);
+      return data || [];
+    }
+
+    function processCertificates(enrollments, courses) {
+      // Create course lookup by name
+      const courseMap = new Map();
+      courses.forEach(course => {
+        const key = normalizeKey(course.course_name);
+        if (key) courseMap.set(key, course);
+      });
+
+      const certificates = [];
+
+      enrollments.forEach(enrollment => {
+        const courseName = enrollment.course_name || "Untitled Course";
+        const courseKey = normalizeKey(courseName);
+        const courseInfo = courseMap.get(courseKey) || {};
+
+        const isCompleted = toBool(enrollment.course_completed);
+        const isCertificateIssued = toBool(enrollment.cerificate_issued);
+        const markObtained = enrollment.mark_obtained || "N/A";
+        const overallResult = enrollment.overall_result || "N/A";
+
+        // Determine status
+        let status = "not-started";
+        let statusLabel = "Not Started";
+        
+        if (isCertificateIssued) {
+          status = "issued";
+          statusLabel = "✅ Certificate Issued";
+        } else if (isCompleted) {
+          status = "pending";
+          statusLabel = "⏳ Certificate Pending";
+        }
+
+        // Only show courses that are completed or have certificate issued
+        if (isCompleted || isCertificateIssued) {
+          certificates.push({
+            courseName: courseName,
+            courseCode: courseInfo.course_code || "N/A",
+            description: courseInfo.description || "No description",
+            thumbnail: courseInfo.thumbnail || "",
+            status: status,
+            statusLabel: statusLabel,
+            date: enrollment.certificate_issued_date || enrollment.completed_date || "N/A",
+            markObtained: markObtained,
+            overallResult: overallResult,
+            isCompleted: isCompleted,
+            isCertificateIssued: isCertificateIssued,
+            enrollmentId: enrollment.id || "N/A"
+          });
+        }
+      });
+
+      return certificates;
+    }
+
+    function renderCertificates(certificates) {
+      const container = document.getElementById("certificatesContainer");
+
+      if (!certificates || certificates.length === 0) {
+        container.innerHTML = `
+          <div class="no-certificates">
+            <div class="icon">📚</div>
+            <h3>No Certificates Yet</h3>
+            <p>Complete a course to earn your first certificate!</p>
+          </div>
+        `;
+        return;
+      }
+
+      // Sort: Issued first, then pending
+      certificates.sort((a, b) => {
+        if (a.isCertificateIssued && !b.isCertificateIssued) return -1;
+        if (!a.isCertificateIssued && b.isCertificateIssued) return 1;
+        return 0;
+      });
+
+      container.innerHTML = `
+        <div class="certificate-grid">
+          ${certificates.map(cert => `
+            <div class="certificate-card">
+              <div class="certificate-icon">${cert.isCertificateIssued ? '🏆' : '📄'}</div>
+              <h3>${escapeHtml(cert.courseName)}</h3>
+              <div class="course-code">${escapeHtml(cert.courseCode)}</div>
+              <div class="date">📅 ${escapeHtml(cert.date)}</div>
+              <span class="status-badge ${cert.status}">${cert.statusLabel}</span>
+              
+              <div class="certificate-details">
+                <div>
+                  <div class="label">Marks</div>
+                  <div class="value">${escapeHtml(cert.markObtained)}</div>
+                </div>
+                <div>
+                  <div class="label">Result</div>
+                  <div class="value">${escapeHtml(cert.overallResult)}</div>
+                </div>
+              </div>
+
+              <button class="download-btn" 
+                      onclick="downloadCertificate('${escapeHtml(cert.courseName)}', '${cert.isCertificateIssued}')"
+                      ${!cert.isCertificateIssued ? 'disabled' : ''}>
+                ${cert.isCertificateIssued ? '📥 Download Certificate' : '🔒 Not Available'}
+              </button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function downloadCertificate(courseName, isIssued) {
+      if (isIssued !== 'true' && isIssued !== true) {
+        alert('Certificate not issued yet for this course.');
+        return;
+      }
+
+      // Here you can implement actual certificate download
+      // For example, generate PDF or download from Supabase storage
+      alert(`Downloading certificate for "${courseName}"\n\nIn production, this would generate a PDF certificate.`);
+      
+      // Example: If you have certificate PDFs stored in Supabase Storage
+      // const certificateUrl = `https://your-supabase-url/storage/v1/object/public/certificates/${courseName}.pdf`;
+      // window.open(certificateUrl, '_blank');
+    }
+
+    function showError(message) {
+      const errorBox = document.getElementById("errorBox");
+      errorBox.textContent = message;
+      errorBox.classList.remove("hidden");
+      
+      const container = document.getElementById("certificatesContainer");
+      container.innerHTML = `
+        <div class="no-certificates">
+          <div class="icon">⚠️</div>
+          <h3>Error Loading Certificates</h3>
+          <p>${escapeHtml(message)}</p>
+        </div>
+      `;
+    }
+
+    // Utility functions
+    function normalizeKey(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function toBool(value) {
+      return value === true || value === "true" || value === "TRUE" || value === 1 || value === "1";
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
