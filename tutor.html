@@ -1901,12 +1901,12 @@
                 <div class="score-list">
                     <h4 style="font-family: var(--font-display); font-size: 15px; margin-bottom: 5px;">Academic Scores</h4>
                     <div class="score-item">
-                        <span class="score-item-title">Quiz Scores (Average)</span>
-                        <span class="score-item-value" id="progressQuizScore">0%</span>
+                        <span class="score-item-title">Overall Score</span>
+                        <span class="score-item-value" id="progressOverallScore">-</span>
                     </div>
                     <div class="score-item">
-                        <span class="score-item-title">Assignment Scores (Average)</span>
-                        <span class="score-item-value" id="progressAssignmentScore">0%</span>
+                        <span class="score-item-title">Overall Result</span>
+                        <span class="score-item-value" id="progressOverallResult">Pending</span>
                     </div>
                 </div>
             </div>
@@ -3115,10 +3115,6 @@
             // Calculate progress percentage: e.g. how many videos, quizzes, assignments are completed out of total
             let totalPossible = 0;
             let totalCompleted = 0;
-            let totalQuizScores = 0;
-            let quizCount = 0;
-            let totalAssignScores = 0;
-            let assignCount = 0;
 
             tracks.forEach(t => {
                 // Video completed
@@ -3128,27 +3124,33 @@
                 // Quiz completed
                 totalPossible += 1;
                 if (t.quiz_completed === 'Yes') totalCompleted += 1;
-                if (t.quiz_mark_obtained !== null) {
-                    totalQuizScores += t.quiz_mark_obtained;
-                    quizCount += 1;
-                }
 
                 // Assignment completed
                 totalPossible += 1;
                 if (t.assignment_completed === 'Yes') totalCompleted += 1;
-                if (t.assignment_mark_obtained !== null) {
-                    totalAssignScores += t.assignment_mark_obtained;
-                    assignCount += 1;
-                }
             });
 
             const progressVal = totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
-            const avgQuiz = quizCount > 0 ? Math.round(totalQuizScores / quizCount) : 0;
-            const avgAssign = assignCount > 0 ? Math.round(totalAssignScores / assignCount) : 0;
+            
+            const markObtained = (student.mark_obtained !== null && student.mark_obtained !== undefined) ? student.mark_obtained : "N/A";
+            let overallResult = (student.overall_result !== null && student.overall_result !== undefined) ? student.overall_result : "Pending";
+            
+            // Standardize display formats if needed, or display as stored.
+            if (overallResult.toUpperCase() === 'PASS') overallResult = 'PASS';
+            if (overallResult.toUpperCase() === 'FAIL') overallResult = 'FAIL';
 
             document.getElementById("progressPercentageText").innerText = `${progressVal}%`;
-            document.getElementById("progressQuizScore").innerText = `${avgQuiz}%`;
-            document.getElementById("progressAssignmentScore").innerText = `${avgAssign}%`;
+            document.getElementById("progressOverallScore").innerText = markObtained;
+            
+            const resultEl = document.getElementById("progressOverallResult");
+            resultEl.innerText = overallResult;
+            if(overallResult === 'PASS' || overallResult === 'Pass') {
+                resultEl.style.color = '#10b981'; // Green
+            } else if (overallResult === 'FAIL' || overallResult === 'Fail') {
+                resultEl.style.color = '#ef4444'; // Red
+            } else {
+                resultEl.style.color = 'var(--accent-blue)';
+            }
 
             // Apex radial bar progress chart
             const isDark = document.documentElement.getAttribute("data-theme") === 'dark';
