@@ -2,442 +2,379 @@
 <html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Details</title>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<title>Course Details</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Poppins, sans-serif;
+        }
 
-<link rel="preconnect"  href="https://fonts.googleapis.com">
-<link rel="preconnect"  href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        body {
+            min-height: 100vh;
+            padding: 30px;
+            background: linear-gradient(135deg, #020617, #0f172a, #172554, #1d4ed8);
+            color: white;
+        }
 
-<style>
+        .back-btn {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 12px 20px;
+            border-radius: 16px;
+            display: inline-block;
+            cursor: pointer;
+            margin-bottom: 25px;
+            transition: 0.3s;
+        }
 
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Poppins,sans-serif;
-}
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
 
-body{
-    min-height:100vh;
-    padding:30px;
+        .course-banner {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(18px);
+            border-radius: 34px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 340px;
+            padding: 35px;
+            margin-bottom: 30px;
+            gap: 24px;
+        }
 
-    background:
-    linear-gradient(
-        135deg,
-        #020617,
-        #0f172a,
-        #172554,
-        #1d4ed8
-    );
+        .banner-img {
+            width: 55%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 28px;
+            display: block;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
 
-    color:white;
-}
+        .banner-content {
+            width: 40%;
+            padding-left: 10px;
+        }
 
-/* BACK */
+        .banner-content h1 {
+            font-size: 42px;
+            margin-bottom: 10px;
+        }
 
-.back-btn{
-    background:
-        rgba(255,255,255,0.08);
+        .banner-content p {
+            color: #dbeafe;
+            line-height: 1.8;
+        }
 
-    padding:12px 20px;
-    border-radius:16px;
-    display:inline-block;
-    cursor:pointer;
-    margin-bottom:25px;
-    transition:0.3s;
-}
+        .progress-box {
+            margin-top: 25px;
+        }
 
-.back-btn:hover{
-    background:
-        rgba(255,255,255,0.15);
-}
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 30px;
+            overflow: hidden;
+        }
 
-/* BANNER */
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #06b6d4, #3b82f6);
+            transition: width 0.4s ease;
+        }
 
-.course-banner{
-    background:
-        rgba(255,255,255,0.08);
+        .section-title {
+            font-size: 28px;
+            margin-bottom: 25px;
+        }
 
-    backdrop-filter:blur(18px);
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 22px;
+        }
 
-    border-radius:34px;
+        .module-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(18px);
+            border-radius: 28px;
+            padding: 25px;
+            cursor: pointer;
+            transition: 0.35s;
+            border: 2px solid transparent;
+        }
 
-    overflow:hidden;
+        .module-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
 
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
+        .module-card h3 {
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
 
-    min-height:340px;
+        .module-card p {
+            color: #dbeafe;
+        }
 
-    padding:35px;
-}
+        .locked {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
 
-.banner-img{
-    width:55%;
-    height:300px;
-    object-fit:cover;
-    border-radius:28px;
-    display:block;
-    box-shadow:
-        0 10px 30px rgba(0,0,0,0.35);
-}
+        .completed {
+            border: 2px solid #22c55e;
+        }
 
-.banner-content{
-    width:40%;
-    padding-left:35px;
-}
+        .empty-state {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 30px;
+            color: #dbeafe;
+        }
 
-.banner-content h1{
-    font-size:42px;
-    margin-bottom:10px;
-}
+        .error-box {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fecaca;
+            padding: 16px 18px;
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
 
-.banner-content p{
-    color:#dbeafe;
-    line-height:1.8;
-}
+        @media (max-width: 900px) {
+            .course-banner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
 
-/* PROGRESS */
+            .banner-img,
+            .banner-content {
+                width: 100%;
+            }
 
-.progress-box{
-    margin-top:25px;
-}
+            .banner-content {
+                padding-left: 0;
+            }
 
-.progress-bar{
-    width:100%;
-    height:12px;
-
-    background:
-        rgba(255,255,255,0.12);
-
-    border-radius:30px;
-    overflow:hidden;
-}
-
-.progress{
-    height:100%;
-    background:
-        linear-gradient(
-            90deg,
-            #06b6d4,
-            #3b82f6
-        );
-}
-
-/* MODULES */
-
-.section-title{
-    font-size:28px;
-    margin-bottom:25px;
-}
-
-.modules-grid{
-    display:grid;
-    grid-template-columns:
-        repeat(
-            auto-fit,
-            minmax(300px,1fr)
-        );
-    gap:22px;
-}
-
-.module-card{
-
-    background:
-        rgba(255,255,255,0.08);
-
-    backdrop-filter:blur(18px);
-
-    border-radius:28px;
-
-    padding:25px;
-
-    cursor:pointer;
-
-    transition:0.35s;
-}
-
-.module-card:hover{
-    transform:
-        translateY(-8px);
-
-    box-shadow:
-        0 10px 30px rgba(0,0,0,0.3);
-}
-
-.module-card h3{
-    margin-bottom:10px;
-}
-
-.module-card p{
-    color:#dbeafe;
-}
-
-.locked{
-    opacity:0.45;
-    cursor:not-allowed;
-}
-
-.completed{
-    border:
-        2px solid #22c55e;
-}
-
-</style>
+            .banner-content h1 {
+                font-size: 32px;
+            }
+        }
+    </style>
 </head>
+
 <body>
-<div class="back-btn" onclick="history.back()">
-    ← Back
-</div>
-<div id="courseBanner" class="course-banner">
-</div>
-<h2 class="section-title">
-    Course Modules
-</h2>
 
-<div id="modulesGrid" class="modules-grid">
-</div>
-<script>
+    <div class="back-btn" onclick="history.back()">← Back</div>
 
-const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
-const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
-const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
+    <div id="messageBox"></div>
 
-const params =new URLSearchParams(window.location.search);
-const courseId =params.get("id");
+    <div id="courseBanner" class="course-banner"></div>
 
-async function loadCourse()
-{
-    /* COURSE */
+    <h2 class="section-title">Course Modules</h2>
+    <div id="modulesGrid" class="modules-grid"></div>
 
-    const {
-        data:course
-    }
-    =
-    await client
-        .from(
-            "courses"
-        )
-        .select("*")
-        .eq(
-            "id",
-            courseId
-        )
-        .single();
+    <script>
+        const SUPABASE_URL = "https://akodraeqesulsofaanna.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
+        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    /* MODULES */
+        const params = new URLSearchParams(window.location.search);
+        const courseName = params.get("course_name");
 
-    const {
-        data:modules
-    }
-    =
-    await client
-        .from(
-            "videos"
-        )
-        .select("*")
-        .eq(
-            "course_id",
-            courseId
-        );
-
-    /* STUDENT TRACKING */
-
-    const studentRegno =
-    localStorage.getItem(
-        "studentRegno"
-    );
-
-    const {
-        data:tracking
-    }
-    =
-    await client
-        .from(
-            "studentcoursetracking"
-        )
-        .select("*")
-        .eq(
-            "student_regno",
-            studentRegno
-        )
-        .eq(
-            "course_name",
-            course.title
-        );
-
-    /* MAP */
-
-    const completedMap =
-    {};
-
-    tracking.forEach(
-        t =>
-    {
-        if(
-            t.quiz_completed
-        )
-        {
-            completedMap[
-                t.module_name
-            ] = true;
+        function showError(message) {
+            document.getElementById("messageBox").innerHTML = `
+                <div class="error-box">${message}</div>
+            `;
         }
-    });
 
-    /* PROGRESS */
-
-    let completedCount = 0;
-
-    modules.forEach(
-        m =>
-    {
-        if(
-            completedMap[
-                m.module_name
-            ]
-        )
-        {
-            completedCount++;
+        function escapeHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
-    });
 
-    const percent =
-    Math.round(
-        (
-            completedCount /
-            modules.length
-        ) * 100
-    );
+        async function loadCourse() {
+            if (!courseName) {
+                showError("Course name not found in URL.");
+                document.getElementById("courseBanner").innerHTML = `
+                    <div class="empty-state">
+                        <h3>Course not selected</h3>
+                        <p>Please open this page from student dashboard.</p>
+                    </div>
+                `;
+                return;
+            }
 
-    /* BANNER */
+            const { data: course, error: courseError } = await client
+                .from("courses")
+                .select("*")
+                .eq("course_name", courseName)
+                .single();
 
-    document
-    .getElementById(
-        "courseBanner"
-    ).innerHTML =
+            if (courseError || !course) {
+                showError(courseError?.message || "Course not found.");
+                document.getElementById("courseBanner").innerHTML = `
+                    <div class="empty-state">
+                        <h3>Course not found</h3>
+                        <p>The selected course is missing in database.</p>
+                    </div>
+                `;
+                return;
+            }
 
-    `
+            const { data: modules, error: modulesError } = await client
+                .from("videos")
+                .select("*")
+                .eq("course_id", courseName);
 
-    <img src="${course.thumbnail}"
-         class="banner-img">
+            if (modulesError) {
+                showError(modulesError.message);
+                return;
+            }
 
-    <div class="banner-content">
+            // BUG FIX #6: None of the old localStorage keys ("studentRegno",
+            // "reg_no", "studentRegNo") are ever written by login or dashboard.
+            // The only key written at login is "user" (the mail_id / username).
+            // We must look up the student profile by mail_id to get the real reg_no,
+            // then cache it under "studentRegNo" for subsequent page loads.
+            let studentRegno = localStorage.getItem("studentRegNo") || "";
 
-        <h1>
-            ${course.title}
-        </h1>
+            if (!studentRegno) {
+                const loginUser = (localStorage.getItem("user") || "").trim();
+                if (loginUser) {
+                    const { data: profile } = await client
+                        .from("studentprofile")
+                        .select("reg_no")
+                        .eq("mail_id", loginUser)
+                        .maybeSingle();
+                    if (profile && profile.reg_no) {
+                        studentRegno = profile.reg_no;
+                        localStorage.setItem("studentRegNo", studentRegno);
+                    }
+                }
+            }
 
-        <p>
-            ${course.description}
-        </p>
+            let tracking = [];
 
-        <div class="progress-box">
+            if (studentRegno) {
+                const { data: trackingData, error: trackingError } = await client
+                    .from("studentcoursetracking")
+                    .select("*")
+                    .eq("reg_no", studentRegno)
+                    .eq("course_name", courseName);
 
-            <div class="progress-bar">
+                if (!trackingError && trackingData) {
+                    tracking = trackingData;
+                }
+            }
 
-                <div class="progress"
-                     style="
-                     width:${percent}%">
+            const completedMap = {};
+
+            tracking.forEach(t => {
+                if (t.video_completed || t.quiz_completed || t.assignment_completed) {
+                    completedMap[t.module_name] = true;
+                }
+            });
+
+            let completedCount = 0;
+
+            modules.forEach(m => {
+                if (completedMap[m.module_name]) {
+                    completedCount++;
+                }
+            });
+
+            const percent = modules.length > 0
+                ? Math.round((completedCount / modules.length) * 100)
+                : 0;
+
+            document.getElementById("courseBanner").innerHTML = `
+                <img src="${escapeHtml(course.thumbnail)}" class="banner-img" alt="${escapeHtml(course.course_name)}">
+                <div class="banner-content">
+                    <h1>${escapeHtml(course.course_name)}</h1>
+                    <p>${escapeHtml(course.description)}</p>
+                    <div class="progress-box">
+                        <div class="progress-bar">
+                            <div class="progress" style="width:${percent}%"></div>
+                        </div>
+                        <div style="margin-top:10px">${percent}% Completed</div>
+                    </div>
                 </div>
+            `;
 
-            </div>
+            if (!modules || modules.length === 0) {
+                document.getElementById("modulesGrid").innerHTML = `
+                    <div class="empty-state">
+                        <h3>No modules found</h3>
+                        <p>This course has no videos/modules in the database yet.</p>
+                    </div>
+                `;
+                return;
+            }
 
-            <div style="margin-top:10px">
+            modules.sort((a, b) => {
+                const nameA = (a.module_name || "").toLowerCase();
+                const nameB = (b.module_name || "").toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
 
-                ${percent}% Completed
+            let html = "";
 
-            </div>
+            modules.forEach((m, index) => {
+                const completed = !!completedMap[m.module_name];
+                let locked = false;
 
-        </div>
+                if (index > 0) {
+                    const prev = modules[index - 1];
+                    locked = !completedMap[prev.module_name];
+                }
 
-    </div>
+                const icon = completed ? "✅" : locked ? "🔒" : "▶";
+                const statusLabel = completed ? "Completed" : locked ? "Locked" : "Ready to learn";
 
-    `;
+                // Show both module_name and video_title on each card
+                html += `
+                    <div class="module-card ${locked ? "locked" : ""} ${completed ? "completed" : ""}"
+                        ${locked ? "" : `onclick="openModule('${encodeURIComponent(m.module_name)}')"`}>
+                        <h3>${icon} ${escapeHtml(m.module_name)}</h3>
+                        <p style="font-size:13px;color:#93c5fd;margin-bottom:8px;">${escapeHtml(m.video_title || "")}</p>
+                        <p>${statusLabel}</p>
+                    </div>
+                `;
+            });
 
-    /* MODULES */
-
-    let html = "";
-
-    modules.forEach(
-        (m,index)=>
-    {
-        const completed =
-        completedMap[
-            m.module_name
-        ];
-
-        let locked =
-        false;
-
-        if(index>0)
-        {
-            const prev =
-            modules[index-1];
-
-            locked =
-            !completedMap[
-                prev.module_name
-            ];
+            document.getElementById("modulesGrid").innerHTML = html;
         }
 
-        html += `
+        function openModule(encodedModuleName) {
+            location.href =
+                "modulePage.html?course_name=" +
+                encodeURIComponent(courseName) +
+                "&module_name=" +
+                encodedModuleName;
+        }
 
-        <div class="module-card
-             ${locked?"locked":""}
-             ${completed?"completed":""}"
-
-             onclick="
-             ${locked
-             ?''
-             :"openModule('"+m.id+"')"}
-             ">
-
-            <h3>
-
-                ${completed
-                ?'✅'
-                :locked
-                ?'🔒'
-                :'▶'}
-
-                ${m.module_name}
-
-            </h3>
-
-            <p>
-
-                ${completed
-                ?"Completed"
-                :locked
-                ?"Locked"
-                :"Ready to learn"}
-
-            </p>
-
-        </div>
-
-        `;
-    });
-
-    document
-    .getElementById(
-        "modulesGrid"
-    ).innerHTML =
-    html;
-}
-
-function openModule(id)
-{
-    location.href ="modulePage.html?id="+id+"&course="+courseId;
-}
-loadCourse();
-</script>
+        loadCourse();
+    </script>
 
 </body>
 </html>

@@ -222,9 +222,9 @@ body{
                     Continue your learning journey
                 </p>
             </div>
-            <div class="profile">
-                <img src="">
-            </div>
+            <!-- PROFILE: no src to avoid broken image network error -->
+        <div class="profile">
+        </div>
         </div>
 
         <!-- PAGE CONTENT -->
@@ -236,6 +236,14 @@ body{
     </div>
 </div>
 <script>
+(function checkStudentAuth() {
+    const user = localStorage.getItem("user");
+    const role = localStorage.getItem("role");
+
+    if (!user || role !== "Student") {
+        window.location.href = "login.html";
+    }
+})();
 
 function loadPage(page, element)
 {
@@ -249,9 +257,11 @@ function loadPage(page, element)
     element.classList.add("active");
 }
 
-function logout()
-{
-    window.location.href ="login.html";
+function logout() {
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+    localStorage.removeItem("selectedCourseName");
+    window.location.href = "login.html";
 }
 </script>
 </body>

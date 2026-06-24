@@ -197,6 +197,8 @@ video{
         Loading...
     </h1>
 
+    <p id="videoSubtitle" style="color:#93c5fd;font-size:16px;margin-bottom:24px;margin-top:-16px;"></p>
+
     <div class="video-wrapper">
 
         <video id="videoPlayer"
@@ -229,137 +231,157 @@ video{
 
 const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
 const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
-const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
+const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-const params =new URLSearchParams(window.location.search);
-
-const moduleId =
-params.get("id");
-
-const courseId =
-params.get("course");
+// BUG FIX #7: old code read params "id" and "course" — neither is sent by
+// coursePage.html. The correct keys are "course_name" and "module_name".
+const params = new URLSearchParams(window.location.search);
+const courseName  = decodeURIComponent(params.get("course_name") || "");
+const moduleName  = decodeURIComponent(params.get("module_name") || "");
 
 let quizId = "";
 
 async function loadModule()
 {
-    /* LOAD MODULE */
-
-    const {
-        data,
-        error
-    } =
-    await client
-        .from(
-            "videos"
-        )
-        .select("*")
-        .eq(
-            "id",
-            moduleId
-        )
-        .single();
-
-    if(error)
+    if (!courseName || !moduleName)
     {
-        console.log(
-            error
-        );
+        document.getElementById("moduleTitle").textContent = "Module not found in URL.";
         return;
     }
 
-    /* LOAD COURSE */
+    // BUG FIX #8: old code fetched by .eq("id", moduleId) where moduleId came
+    // from params.get("id") — always null. Must fetch by course_id + module_name.
+    const { data, error } =
+        await client
+            .from("videos")
+            .select("*")
+            .eq("course_id", courseName)
+            .eq("module_name", moduleName)
+            .maybeSingle();
 
-    const {
-        data:course,
-        error:courseError
-    }
-    =
-    await client
-        .from(
-            "courses"
-        )
-        .select("*")
-        .eq(
-            "id",
-            courseId
-        )
-        .single();
-
-    if(courseError)
+    if (error || !data)
     {
-        console.log(
-            courseError
-        );
+        document.getElementById("moduleTitle").textContent = "Video not found.";
+        console.error(error);
         return;
     }
 
-    /* STORE VALUES */
+    quizId = data.quiz_id || "";
 
-    window.moduleName =
-    data.module_name;
-
-    window.courseName =
-    course.title;
-
-    quizId =
-    data.quiz_id;
-
-    /* UI */
-
-    document
-    .getElementById(
-        "moduleTitle"
-    ).innerHTML =
-    data.module_name;
-
-    document
-    .getElementById(
-        "videoPlayer"
-    ).src =
-    data.video_url;
+    // Show module_name as heading and video_title as subtitle
+    document.getElementById("moduleTitle").textContent = data.module_name || moduleName;
+    const subtitleEl = document.getElementById("videoSubtitle");
+    if (subtitleEl) subtitleEl.textContent = data.video_title || "";
+    document.getElementById("videoPlayer").src = data.video_url;
 }
 
-document
-.getElementById(
-    "videoPlayer"
-)
-.onended =
-function()
+// BUG FIX #10: old code had no tracking write at all.
+// Write video_completed = true in studentcoursetracking when the video ends.
+async function markVideoCompleted()
 {
-    const btn =
-    document.getElementById(
-        "quizBtn"
-    );
+    // Resolve reg_no — cached after login by coursePage, or re-fetch here
+    let reg_no = localStorage.getItem("studentRegNo") || "";
 
-    btn.disabled =
-    false;
+    if (!reg_no)
+    {
+        const loginUser = (localStorage.getItem("user") || "").trim();
+        if (loginUser)
+        {
+            const { data: profile } = await client
+                .from("studentprofile")
+                .select("reg_no, student_name")
+                .eq("mail_id", loginUser)
+                .maybeSingle();
+            if (profile && profile.reg_no)
+            {
+                reg_no = profile.reg_no;
+                localStorage.setItem("studentRegNo", reg_no);
+            }
+        }
+    }
 
-    btn.classList.add(
-        "enabled"
-    );
+    if (!reg_no) return;   // can't write without a key
 
-    btn.innerHTML =
-    "📝 Start Quiz";
+    // Check if a tracking row already exists for this reg_no + course + module
+    const { data: existing } = await client
+        .from("studentcoursetracking")
+        .select("reg_no")
+        .eq("reg_no", reg_no)
+        .eq("course_name", courseName)
+        .eq("module_name", moduleName)
+        .maybeSingle();
 
-   btn.onclick =
-function()
+    if (existing)
+    {
+        // Row exists — just update video_completed
+        await client
+            .from("studentcoursetracking")
+            .update({ video_completed: true })
+            .eq("reg_no", reg_no)
+            .eq("course_name", courseName)
+            .eq("module_name", moduleName);
+    }
+    else
+    {
+        // No row yet — insert a new tracking record
+        const loginUser = (localStorage.getItem("user") || "").trim();
+        let student_name = "";
+        if (loginUser)
+        {
+            const { data: profile } = await client
+                .from("studentprofile")
+                .select("student_name")
+                .eq("mail_id", loginUser)
+                .maybeSingle();
+            student_name = profile?.student_name || "";
+        }
+
+        await client
+            .from("studentcoursetracking")
+            .insert([{
+                reg_no,
+                student_name,
+                course_name:  courseName,
+                module_name:  moduleName,
+                video_completed:  true,
+                quiz_completed:   false,
+                quiz_attempt:     0,
+                quiz_mark_obtained: "",
+                module_score:     ""
+            }]);
+    }
+}
+
+document.getElementById("videoPlayer").onended = async function()
 {
-    location.href =
+    // Write tracking first, then unlock quiz button
+    await markVideoCompleted();
 
-    "quizPage.html"+
-    "?quiz="+quizId+
-    "&module="+moduleId+
-    "&course="+courseId+
-    "&moduleName="+
-    encodeURIComponent(
-        moduleName
-    )+
-    "&courseName="+
-    encodeURIComponent(
-        courseName
-    );
-};
+    const btn = document.getElementById("quizBtn");
+    btn.disabled = false;
+    btn.classList.add("enabled");
+
+    if (quizId)
+    {
+        btn.innerHTML = "📝 Start Quiz";
+
+        // BUG FIX #9: old redirect used "&module="+moduleId+"&course="+courseId
+        // (both null). Must pass course_name and module_name so quizPage can
+        // identify which quiz to load.
+        btn.onclick = function()
+        {
+            location.href =
+                "quizPage.html" +
+                "?quiz="        + encodeURIComponent(quizId) +
+                "&course_name=" + encodeURIComponent(courseName) +
+                "&module_name=" + encodeURIComponent(moduleName);
+        };
+    }
+    else
+    {
+        btn.innerHTML = "✅ No Quiz — Module Complete";
+        btn.onclick = function() { history.back(); };
+    }
 };
 
 loadModule();

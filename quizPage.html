@@ -253,292 +253,158 @@ body{
 
 const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
 const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
-const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
+const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
-const params =new URLSearchParams(window.location.search);
-const quizId =params.get("quiz");
-const moduleId =params.get("module");
+const params = new URLSearchParams(window.location.search);
 
-const courseId =params.get("course");
-
-const moduleName =
-decodeURIComponent(
-    params.get(
-        "moduleName"
-    )
-);
-
-const courseName =
-decodeURIComponent(
-    params.get(
-        "courseName"
-    )
-);
+// FIX: old code read "moduleName" and "courseName" — modulePage now sends
+// "module_name" and "course_name" (consistent with schema column names).
+const quizId      = params.get("quiz") || "";
+const courseName  = decodeURIComponent(params.get("course_name") || "");
+const moduleName  = decodeURIComponent(params.get("module_name") || "");
 
 let quizQuestions = [];
 let answers = {};
 
 async function loadQuiz()
 {
-    const {
-        data,
-        error
-    } =
-    await client
-        .from(
-            "quizzes"
-        )
-        .select("*")
-        .eq(
-            "quiz_id",
-            quizId);
-
-    if(error)
+    if (!quizId)
     {
-        console.log(error);
+        document.getElementById("question").textContent = "No quiz ID provided.";
         return;
     }
 
-    quizQuestions =
-    data;
+    // Load all questions for this quiz_id from the quizzes table
+    const { data, error } = await client
+        .from("quizzes")
+        .select("*")
+        .eq("quiz_id", quizId);
 
-    let html="";
-
-    data.forEach(
-        (q,index)=>
+    if (error || !data || data.length === 0)
     {
+        document.getElementById("question").textContent = "No questions found for this quiz.";
+        console.error(error);
+        return;
+    }
+
+    quizQuestions = data;
+
+    let html = "";
+    data.forEach((q, index) =>
+    {
+        // Escape values used in onclick to prevent attribute-breaking quotes
+        const safe1 = (q.option1 || "").replace(/'/g, "\\'");
+        const safe2 = (q.option2 || "").replace(/'/g, "\\'");
+        const safe3 = (q.option3 || "").replace(/'/g, "\\'");
+        const safe4 = (q.option4 || "").replace(/'/g, "\\'");
+
         html += `
-
-        <div class="question-card">
-
-            <h3>
-
-                Q${index+1}.
-                ${q.question}
-
-            </h3>
-
-            <div class="option"
-                 onclick="
-                 selectOption(
-                 this,
-                 '${q.id}',
-                 '${q.option1}'
-                 )">
-
-                ${q.option1}
-
-            </div>
-
-            <div class="option"
-                 onclick="
-                 selectOption(
-                 this,
-                 '${q.id}',
-                 '${q.option2}'
-                 )">
-
-                ${q.option2}
-
-            </div>
-
-            <div class="option"
-                 onclick="
-                 selectOption(
-                 this,
-                 '${q.id}',
-                 '${q.option3}'
-                 )">
-
-                ${q.option3}
-
-            </div>
-
-            <div class="option"
-                 onclick="
-                 selectOption(
-                 this,
-                 '${q.id}',
-                 '${q.option4}'
-                 )">
-
-                ${q.option4}
-
-            </div>
-
-        </div>
-
-        `;
+        <div class="question-card" style="margin-bottom:32px;">
+            <h3 style="margin-bottom:16px;">Q${index + 1}. ${q.question}</h3>
+            <div class="option" onclick="selectOption(this,'${q.id}','${safe1}')">${q.option1}</div>
+            <div class="option" onclick="selectOption(this,'${q.id}','${safe2}')">${q.option2}</div>
+            <div class="option" onclick="selectOption(this,'${q.id}','${safe3}')">${q.option3}</div>
+            <div class="option" onclick="selectOption(this,'${q.id}','${safe4}')">${q.option4}</div>
+        </div>`;
     });
 
-    document
-    .getElementById(
-        "question"
-    ).style.display =
-    "none";
-
-    document
-    .getElementById(
-        "options"
-    ).innerHTML =
-    html;
+    // Hide the single-question placeholder, show all questions
+    document.getElementById("question").style.display = "none";
+    document.getElementById("options").innerHTML = html;
 }
 
-function selectOption(
-    element,
-    questionId,
-    answer
-)
+function selectOption(element, questionId, answer)
 {
-    const parent =
-    element.parentElement;
-
-    parent
-    .querySelectorAll(
-        ".option"
-    )
-    .forEach(
-        o =>
-        o.classList.remove(
-            "selected"
-        )
-    );
-
-    element.classList.add(
-        "selected"
-    );
-
-    answers[
-        questionId
-    ] = answer;
+    const parent = element.parentElement;
+    parent.querySelectorAll(".option").forEach(o => o.classList.remove("selected"));
+    element.classList.add("selected");
+    answers[questionId] = answer;
 }
 
-document
-.getElementById(
-    "submitBtn"
-)
-.onclick =
-async function()
+document.getElementById("submitBtn").onclick = async function()
 {
+    // Score the quiz
     let score = 0;
-
-    quizQuestions.forEach(
-        q =>
+    quizQuestions.forEach(q =>
     {
-        if(
-            answers[q.id] ===
-            q.correct_answer
-        )
+        if (answers[q.id] === q.correct_answer) score++;
+    });
+
+    const total   = quizQuestions.length;
+    const percent = total > 0 ? Math.round((score / total) * 100) : 0;
+    const passed  = percent >= 60;
+
+    // Resolve reg_no
+    let reg_no = localStorage.getItem("studentRegNo") || "";
+    if (!reg_no)
+    {
+        const loginUser = (localStorage.getItem("user") || "").trim();
+        if (loginUser)
         {
-            score++;
+            const { data: profile } = await client
+                .from("studentprofile")
+                .select("reg_no")
+                .eq("mail_id", loginUser)
+                .maybeSingle();
+            if (profile?.reg_no)
+            {
+                reg_no = profile.reg_no;
+                localStorage.setItem("studentRegNo", reg_no);
+            }
         }
-    });
+    }
 
-    const total =
-    quizQuestions.length;
-
-    const percent =
-    Math.round(
-        (
-            score /
-            total
-        ) * 100
-    );
-
-    const result =
-    percent >= 60
-    ? "PASS"
-    : "FAIL";
-
-    const studentRegno =
-    localStorage.getItem(
-        "studentRegno"
-    );
-
-    await client
-    .from(
-        "studentcoursetracking"
-    )
-    .upsert({
-
-        student_regno:
-        studentRegno,
-
-        course_name:
-        courseName,
-
-        module_name:
-        moduleName,
-
-        score:
-        percent+"%",
-
-        result:
-        result,
-
-        status:
-        result==="PASS"
-        ? "Completed"
-        : "Retest",
-
-        video_completed:
-        true,
-
-        quiz_completed:
-        result==="PASS"
-
-    });
-
-    if(
-        result==="PASS"
-    )
+    // Update studentcoursetracking with quiz result
+    // FIX: old code used wrong field names (student_regno, score, result, status).
+    // Correct schema fields: reg_no, quiz_completed, quiz_mark_obtained, quiz_attempt.
+    if (reg_no && courseName && moduleName)
     {
-        successMsg.innerHTML =
+        // Fetch existing row to increment attempt count
+        const { data: existing } = await client
+            .from("studentcoursetracking")
+            .select("quiz_attempt")
+            .eq("reg_no", reg_no)
+            .eq("course_name", courseName)
+            .eq("module_name", moduleName)
+            .maybeSingle();
 
-        `
-        🎉 Passed
-        <br><br>
-        Score :
-        ${percent}%
-        `;
+        const attemptCount = ((existing?.quiz_attempt) || 0) + 1;
 
-        successMsg.style.display =
-        "block";
+        await client
+            .from("studentcoursetracking")
+            .update({
+                quiz_completed:     passed,
+                quiz_attempt:       attemptCount,
+                quiz_mark_obtained: percent + "%",
+                module_score:       percent + "%"
+            })
+            .eq("reg_no", reg_no)
+            .eq("course_name", courseName)
+            .eq("module_name", moduleName);
+    }
 
-        setTimeout(
-        function()
+    const successMsg = document.getElementById("successMsg");
+    const failMsg    = document.getElementById("failMsg");
+    const submitBtn  = document.getElementById("submitBtn");
+
+    if (passed)
+    {
+        successMsg.innerHTML = `🎉 Passed<br><br>Score: ${percent}%`;
+        successMsg.style.display = "block";
+
+        setTimeout(function()
         {
-            location.href =
-            "coursePage.html?id="+
-            courseId;
-        },
-        2500
-        );
+            // FIX: old redirect sent ?id=courseId (broken).
+            // Must send ?course_name=... to match coursePage's URL param.
+            location.href = "coursePage.html?course_name=" + encodeURIComponent(courseName);
+        }, 2500);
     }
     else
     {
-        failMsg.innerHTML =
-
-        `
-        ❌ Failed
-        <br><br>
-        Score :
-        ${percent}%
-        <br><br>
-        Retest Required
-        `;
-
-        failMsg.style.display =
-        "block";
-
-        submitBtn.innerHTML =
-        "🔄 Retest";
-
-        submitBtn.onclick =
-        function()
-        {
-            location.reload();
-        };
+        failMsg.innerHTML = `❌ Failed<br><br>Score: ${percent}%<br><br>Retest Required`;
+        failMsg.style.display = "block";
+        submitBtn.innerHTML = "🔄 Retest";
+        submitBtn.onclick = function() { location.reload(); };
     }
 };
 

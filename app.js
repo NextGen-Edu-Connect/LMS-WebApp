@@ -260,8 +260,11 @@ async function loadCoursesDropdown()
     const dropdown =document.getElementById("videoCourse");
     dropdown.innerHTML = "";
     data.forEach(course => {
+        // BUG FIX: value must be course_name (text), not course.id.
+        // videos.course_id stores the course name string, so the dropdown
+        // value must match that exact string.
         dropdown.innerHTML += `
-            <option value="${course.id}">
+            <option value="${course.course_name}">
                 ${course.course_name}
             </option>
         `;
@@ -272,7 +275,9 @@ async function loadCoursesDropdown()
 
 window.addCourse = async function ()
 {
-    const title = document.getElementById("courseTitle").value;
+    // BUG FIX: was reading into variable "title" and inserting { title }.
+    // DB column is "course_name", so we read into course_name and insert that.
+    const course_name = document.getElementById("courseTitle").value;
     const description =document.getElementById("courseDescription").value;
     const file =document.getElementById("courseThumbnail").files[0];
     if (!file)
@@ -305,7 +310,7 @@ window.addCourse = async function ()
             .from("courses")
             .insert([
                 {
-                    title,
+                    course_name,
                     description,
                     thumbnail
                 }
@@ -341,10 +346,11 @@ async function loadCoursesTable()
     body.innerHTML = "";
     data.forEach(course =>
     {
+        // BUG FIX: was course.title — DB column is course_name
         body.innerHTML += `
             <tr>
                 <td>
-                    ${course.title}
+                    ${course.course_name}
                 </td>
 
                 <td>
@@ -389,7 +395,8 @@ window.openEditCourseModal =async function (id)
     }
 
     document.getElementById("editCourseId").value = data.id;
-    document.getElementById("editCourseName").value = data.title;
+    // BUG FIX: was data.title — DB column is course_name
+    document.getElementById("editCourseName").value = data.course_name;
     document.getElementById("editCourseDescription").value = data.description;
     document.getElementById("previewThumbnail").src = data.thumbnail;
     document.getElementById("editCourseModal").style.display = "flex";
@@ -400,7 +407,8 @@ window.openEditCourseModal =async function (id)
 window.updateCourse =async function ()
 {
     const id =document.getElementById("editCourseId").value;
-    const title =document.getElementById("editCourseName").value;
+    // BUG FIX: was "title" — DB column is course_name
+    const course_name =document.getElementById("editCourseName").value;
     const description =document.getElementById("editCourseDescription").value;
     const file =document.getElementById("editCourseThumbnail").files[0];
     let thumbnail =document.getElementById("previewThumbnail").src;
@@ -422,7 +430,8 @@ window.updateCourse =async function ()
     }
 
     /* UPDATE DATABASE */
-    const { error } = await client.from("courses").update({title,description,thumbnail}).eq("id", id);
+    // BUG FIX: was {title, description, thumbnail} — must use course_name
+    const { error } = await client.from("courses").update({course_name,description,thumbnail}).eq("id", id);
     if (error)
     {
         alert(error.message);
@@ -534,22 +543,15 @@ async function loadVideosTable()
             .from("videos")
             .select("*");
 
-    // Get courses
-    const { data: courses } =
-        await client
-            .from("courses")
-            .select("*");
-
     const body =document.getElementById("videosBody");
     body.innerHTML = "";
     videos.forEach(video => {
-        // Find course name using course_id
-        const course =courses.find(c => c.id == video.course_id);
-        const courseName =course? course.title: "";
+        // BUG FIX: course_id now stores the course_name string directly.
+        // No need to cross-reference courses table by id.
         body.innerHTML += `
             <tr>
                 <td>
-                    ${courseName}
+                    ${video.course_id}
                 </td>
                 <td>
                     ${video.module_name}
@@ -592,18 +594,18 @@ window.openEditVideoModal = async function (id)
     const courseDropdown =document.getElementById("editVideoCourse");
     courseDropdown.innerHTML = "";
 
-    // Fill dropdown
-
+    // BUG FIX: option value must be course_name string (not course.id),
+    // so that courseDropdown.value = data.course_id matches correctly.
     courses.forEach(course =>
     {
         courseDropdown.innerHTML += `
-            <option value="${course.id}">
-                ${course.title}
+            <option value="${course.course_name}">
+                ${course.course_name}
             </option>
         `;
     });
 
-    // Set selected course
+    // Set selected course — data.course_id holds the course_name string
     courseDropdown.value=data.course_id;
     // Set other fields
     document.getElementById("editVideoId").value = data.id;
@@ -617,17 +619,18 @@ window.openEditVideoModal = async function (id)
 async function updateVideo()
 {
     const id =document.getElementById("editVideoId").value;
+    // BUG FIX: course_id now holds the course_name string directly from the dropdown
     const course_id =document.getElementById("editVideoCourse").value;
     const module_name =document.getElementById("editModuleName").value;
     const video_title =document.getElementById("editVideoTitle").value;
-    // Generate Quiz ID
-    const courseDropdown =document.getElementById("editVideoCourse");
-    const course =courseDropdown.options[courseDropdown.selectedIndex].text.trim().replace(/\s+/g, "_");
-    const module =module_name.trim().replace(/\s+/g, "_");
+
+    // Generate Quiz ID from course_name + module_name
+    const courseSlug = course_id.trim().replace(/\s+/g, "_");
+    const moduleSlug = module_name.trim().replace(/\s+/g, "_");
     let quiz_id = "";
-    if (course && module)
+    if (courseSlug && moduleSlug)
     {
-        quiz_id = `${course}_${module}`;
+        quiz_id = `${courseSlug}_${moduleSlug}`;
     }
     let updateData = {course_id, module_name,video_title,quiz_id};
 
@@ -1544,22 +1547,3 @@ window.loadStudentCourses =
 //         `;
 //     });
 // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
