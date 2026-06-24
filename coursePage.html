@@ -189,11 +189,71 @@ body{
         2px solid #22c55e;
 }
 
+.action-bar
+{
+    display:flex;
+    justify-content:flex-end;
+    margin-bottom:25px;
+}
+
+.start-course-btn
+{
+    border:none;
+    padding:14px 28px;
+    border-radius:18px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #06b6d4,
+            #3b82f6
+        );
+
+    color:white;
+    font-size:16px;
+    font-weight:600;
+
+    cursor:pointer;
+
+    transition:0.3s;
+
+    box-shadow:
+        0 8px 25px rgba(59,130,246,0.35);
+}
+
+.start-course-btn:hover
+{
+    transform:translateY(-3px);
+
+    box-shadow:
+        0 12px 30px rgba(59,130,246,0.45);
+}
+
+.start-course-btn.disabled
+{
+    background:
+        rgba(255,255,255,0.15);
+
+    cursor:not-allowed;
+
+    box-shadow:none;
+
+    opacity:0.7;
+}
+
 </style>
 </head>
 <body>
-<div class="back-btn" onclick="history.back()">
+<div class="back-btn"
+     onclick="location.href='studentdashboardPage.html'">
     ← Back
+</div>
+<div class="action-bar">
+    <button id="startCourseBtn"
+            class="start-course-btn"
+            onclick="StartCourse()">
+        🚀 Start Course
+    </button>
 </div>
 <div id="courseBanner" class="course-banner">
 </div>
@@ -209,74 +269,38 @@ const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
 const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
 const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
 
-const params =new URLSearchParams(window.location.search);
-const courseId =params.get("id");
+const params = new URLSearchParams(window.location.search);
+const courseName = params.get("course_name");
+let courseId=null;
+let modules = [];
+let activeModuleName = "";
+const studentRegno = localStorage.getItem("user" );
+console.log("Course Name:", courseName);
 
 async function loadCourse()
 {
     /* COURSE */
 
-    const {
-        data:course
-    }
-    =
-    await client
-        .from(
-            "courses"
-        )
-        .select("*")
-        .eq(
-            "id",
-            courseId
-        )
-        .single();
+    const { data:course} = await client.from("courses").select("*").eq("course_name", courseName).single();
+    courseId = course.id;
 
     /* MODULES */
 
-    const {
-        data:modules
-    }
-    =
-    await client
-        .from(
-            "videos"
-        )
-        .select("*")
-        .eq(
-            "course_id",
-            courseId
-        );
+    const { data} =await client.from("videos")
+    .select("*")
+    .eq("course_id", courseId)
+    .order("module_name", { ascending: true });
+    modules = data || [];
 
     /* STUDENT TRACKING */
-
-    const studentRegno =
-    localStorage.getItem(
-        "studentRegno"
-    );
-
-    const {
-        data:tracking
-    }
-    =
-    await client
-        .from(
-            "studentcoursetracking"
-        )
-        .select("*")
-        .eq(
-            "student_regno",
-            studentRegno
-        )
-        .eq(
-            "course_name",
-            course.title
-        );
+    ViewStartButton(studentRegno,courseName);
+   // const studentRegno = localStorage.getItem("studentRegno" );
+    
+    const {data:tracking}= await client.from("studentcoursetracking").select("*").eq("reg_no",studentRegno).eq("course_name",course.course_name);
 
     /* MAP */
 
-    const completedMap =
-    {};
-
+    const completedMap ={};
     tracking.forEach(
         t =>
     {
@@ -307,13 +331,7 @@ async function loadCourse()
         }
     });
 
-    const percent =
-    Math.round(
-        (
-            completedCount /
-            modules.length
-        ) * 100
-    );
+    const percent = Math.round((completedCount /modules.length) * 100);
 
     /* BANNER */
 
@@ -330,7 +348,7 @@ async function loadCourse()
     <div class="banner-content">
 
         <h1>
-            ${course.title}
+            ${course.course_name}
         </h1>
 
         <p>
@@ -367,24 +385,42 @@ async function loadCourse()
     modules.forEach(
         (m,index)=>
     {
-        const completed =
-        completedMap[
-            m.module_name
+       const moduleTracking =
+    tracking.find(
+        t => t.module_name === m.module_name
+    );
+
+const moduleResult = moduleTracking?.module_result || "";
+const completed = moduleResult === "PASS";
+const disabled =    moduleResult === "PASS" ||  moduleResult === "FAIL";
+let locked = true;
+const courseStarted =   tracking &&  tracking.length > 0;
+
+if (!courseStarted)
+{
+    locked = true;
+}
+else if (disabled)
+{
+    locked = true;
+}
+else if (index === 0)
+{
+    locked = false;
+}
+else
+{
+    const prev = modules[index - 1];
+    locked =
+        !completedMap[
+            prev.module_name
         ];
+}
+if (!locked && !disabled)
+{
+    activeModuleName = m.module_name;
 
-        let locked =
-        false;
-
-        if(index>0)
-        {
-            const prev =
-            modules[index-1];
-
-            locked =
-            !completedMap[
-                prev.module_name
-            ];
-        }
+}
 
         html += `
 
@@ -393,18 +429,20 @@ async function loadCourse()
              ${completed?"completed":""}"
 
              onclick="
-             ${locked
-             ?''
-             :"openModule('"+m.id+"')"}
-             ">
+${(locked || disabled)
+? ''
+: "openModule('" + m.id + "')"}
+"
 
             <h3>
 
-                ${completed
-                ?'✅'
-                :locked
-                ?'🔒'
-                :'▶'}
+                ${moduleResult === "PASS"
+?'✅'
+:moduleResult === "FAIL"
+?'❌'
+:locked
+?'🔒'
+:'▶'}
 
                 ${m.module_name}
 
@@ -412,11 +450,13 @@ async function loadCourse()
 
             <p>
 
-                ${completed
-                ?"Completed"
-                :locked
-                ?"Locked"
-                :"Ready to learn"}
+                ${moduleResult === "PASS"
+?"Completed"
+:moduleResult === "FAIL"
+?"Failed"
+:locked
+?"Locked"
+:"Ready to learn"}
 
             </p>
 
@@ -425,6 +465,12 @@ async function loadCourse()
         `;
     });
 
+    //status update for start new module
+    const { error: trackError } = await client.from("studentcoursetracking").update({module_result: "Processing"}).eq("reg_no", studentRegno).eq("module_name",activeModuleName).eq("module_result","Not Started");
+    
+    if (trackError) 
+        throw trackError;
+
     document
     .getElementById(
         "modulesGrid"
@@ -432,11 +478,106 @@ async function loadCourse()
     html;
 }
 
+async function ViewStartButton(studentRegNo, courseName)
+{
+    const { data: enrollment } =await client
+    .from("studentenrollment")
+    .select("student_status")
+    .eq("reg_no", studentRegno)
+    .eq("course_name", courseName)
+    .maybeSingle();
+
+if (enrollment?.student_status === "Completed")
+{
+    startBtn.style.display = "none";
+    return;
+}
+    const { data, error } = await client
+        .from("studentcoursetracking")
+        .select("id")
+        .eq("reg_no", studentRegNo)
+        .eq("course_name", courseName);
+
+    const startBtn = document.getElementById("startCourseBtn");
+
+    if (error)
+    {
+        console.log(error);
+        return;
+    }
+
+    if (data && data.length > 0)
+    {
+        startBtn.style.display = "none";
+    }
+    else
+    {
+        startBtn.style.display = "block";
+        startBtn.innerHTML = "🚀 Start Course";
+        startBtn.classList.remove("disabled");
+    }
+}
+
+async function StartCourse()
+{
+        //const studentRegno = localStorage.getItem("studentRegno");
+        const studentName=localStorage.getItem("studentName");
+        if (modules.length === 0)
+        {
+            return;
+        }
+        const trackingRecords = modules.map(m => ({
+        reg_no: studentRegno,
+        student_name: studentName,
+        course_name: courseName,
+        module_name: m.module_name,
+        video_completed: false,
+        quiz_availble: false,
+        quiz_attempt: 0,
+        quiz_completed: false,
+        assignment_availble: false,
+        assignment_completed: false,
+        module_result: "Not Started",
+        student_status: "In Progress"
+    }));
+
+    if (trackingRecords.length > 0)
+    {
+        trackingRecords[0].module_result = "Processing";
+        trackingRecords[0].student_status = "In Progress";
+    }
+        const { error } = await client
+        .from("studentcoursetracking")
+        .insert(trackingRecords);
+
+    if (error)
+    {
+        alert(error.message);
+        return;
+    }
+    
+    //update student profile table
+    // const { error: profileError } = await client.from("studentprofile").update({student_status: "In Progress"}).eq("reg_no", studentRegno);
+    
+    // if (profileError) 
+    //     throw profileError;
+
+    //update student enrollment table
+    const { error: enrollmentError } = await client.from("studentenrollment").update({student_status: "In Progress"}).eq("reg_no", studentRegno);
+    
+    if (enrollmentError) 
+        throw enrollmentError;
+
+    location.reload();
+}
+
 function openModule(id)
 {
     location.href ="modulePage.html?id="+id+"&course="+courseId;
 }
 loadCourse();
+
+
 </script>
 
 </body>

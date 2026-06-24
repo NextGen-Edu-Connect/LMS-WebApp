@@ -4,7 +4,6 @@
 <head>
 
 <meta charset="UTF-8">
-
 <meta name="viewport"
       content="width=device-width, initial-scale=1.0">
 
@@ -258,159 +257,61 @@ const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
 const params =new URLSearchParams(window.location.search);
 const quizId =params.get("quiz");
 const moduleId =params.get("module");
-
 const courseId =params.get("course");
-
-const moduleName =
-decodeURIComponent(
-    params.get(
-        "moduleName"
-    )
-);
-
-const courseName =
-decodeURIComponent(
-    params.get(
-        "courseName"
-    )
-);
-
+const moduleName =decodeURIComponent(params.get("moduleName"));
+const courseName =decodeURIComponent(params.get("courseName"));
+const studentRegno = localStorage.getItem("user");
 let quizQuestions = [];
 let answers = {};
 
 async function loadQuiz()
 {
-    const {
-        data,
-        error
-    } =
-    await client
-        .from(
-            "quizzes"
-        )
-        .select("*")
-        .eq(
-            "quiz_id",
-            quizId);
-
+    const { data,error} = await client.from("quizzes").select("*").eq("quiz_id",quizId);
     if(error)
     {
         console.log(error);
         return;
     }
 
-    quizQuestions =
-    data;
-
+    quizQuestions =data;
     let html="";
-
-    data.forEach(
-        (q,index)=>
+    data.forEach((q,index)=>
     {
         html += `
-
         <div class="question-card">
-
             <h3>
-
                 Q${index+1}.
                 ${q.question}
-
             </h3>
-
             <div class="option"
-                 onclick="
-                 selectOption(
-                 this,
-                 '${q.id}',
-                 '${q.option1}'
-                 )">
-
-                ${q.option1}
-
+                 onclick="selectOption(this,'${q.id}','${q.option1}')"> ${q.option1}
             </div>
 
             <div class="option"
-                 onclick="
-                 selectOption(
-                 this,
-                 '${q.id}',
-                 '${q.option2}'
-                 )">
-
-                ${q.option2}
-
+                 onclick="selectOption(this,'${q.id}','${q.option2}')">${q.option2}
             </div>
 
             <div class="option"
-                 onclick="
-                 selectOption(
-                 this,
-                 '${q.id}',
-                 '${q.option3}'
-                 )">
-
-                ${q.option3}
-
+                 onclick="selectOption(this,'${q.id}','${q.option3}')">${q.option3}
             </div>
 
             <div class="option"
-                 onclick="
-                 selectOption(
-                 this,
-                 '${q.id}',
-                 '${q.option4}'
-                 )">
-
-                ${q.option4}
-
+                 onclick="selectOption(this,'${q.id}','${q.option4}')">${q.option4}
             </div>
-
         </div>
-
         `;
     });
 
-    document
-    .getElementById(
-        "question"
-    ).style.display =
-    "none";
-
-    document
-    .getElementById(
-        "options"
-    ).innerHTML =
-    html;
+    document.getElementById("question").style.display ="none";
+    document.getElementById("options" ).innerHTML =  html;
 }
 
-function selectOption(
-    element,
-    questionId,
-    answer
-)
+function selectOption(element,questionId,answer)
 {
-    const parent =
-    element.parentElement;
-
-    parent
-    .querySelectorAll(
-        ".option"
-    )
-    .forEach(
-        o =>
-        o.classList.remove(
-            "selected"
-        )
-    );
-
-    element.classList.add(
-        "selected"
-    );
-
-    answers[
-        questionId
-    ] = answer;
+    const parent = element.parentElement;
+    parent.querySelectorAll(".option").forEach(o =>o.classList.remove("selected"));
+    element.classList.add("selected");
+    answers[questionId] = answer;
 }
 
 document
@@ -420,6 +321,42 @@ document
 .onclick =
 async function()
 {
+    
+
+    const {
+        data:tracking
+    }
+    =
+    await client
+        .from(
+            "studentcoursetracking"
+        )
+        .select("*")
+        .eq(
+            "reg_no",
+            studentRegno
+        )
+        .eq(
+            "course_name",
+            courseName
+        )
+        .eq(
+            "module_name",
+            moduleName
+        )
+        .single();
+
+    let attempt =
+    tracking?.quiz_attempt || 0;
+
+    if(attempt >= 3)
+    {
+        alert(
+            "Maximum 3 attempts reached"
+        );
+        return;
+    }
+
     let score = 0;
 
     quizQuestions.forEach(
@@ -434,112 +371,163 @@ async function()
         }
     });
 
-    const total =
-    quizQuestions.length;
-
     const percent =
     Math.round(
         (
             score /
-            total
+            quizQuestions.length
         ) * 100
     );
+
+    attempt++;
 
     const result =
     percent >= 60
     ? "PASS"
     : "FAIL";
 
-    const studentRegno =
-    localStorage.getItem(
-        "studentRegno"
-    );
+    const updateData =
+    {
+        quiz_attempt:
+            attempt,
 
-    await client
-    .from(
-        "studentcoursetracking"
-    )
-    .upsert({
+        quiz_mark_obtained:
+            percent + "%"
+    };
 
-        student_regno:
-        studentRegno,
+    if(attempt === 1)
+    {
+        updateData.quiz_mark_obtained_attempt1 =
+        percent + "%";
+    }
 
-        course_name:
-        courseName,
+    if(attempt === 2)
+    {
+        updateData.quiz_mark_obtained_attempt2 =
+        percent + "%";
+    }
 
-        module_name:
-        moduleName,
+    if(attempt === 3)
+    {
+        updateData.quiz_mark_obtained_attempt3 =
+        percent + "%";
+    }
 
-        score:
-        percent+"%",
-
-        result:
-        result,
-
-        status:
-        result==="PASS"
-        ? "Completed"
-        : "Retest",
-
-        video_completed:
-        true,
-
-        quiz_completed:
-        result==="PASS"
-
-    });
-
-    if(
-        result==="PASS"
-    )
+    if(result === "PASS")
+    {
+        updateData.quiz_completed = true;
+        updateData.module_result = "PASS";
+        const moduleScore = 70 + (percent * 0.30);
+        updateData.module_score = moduleScore.toFixed(0) + "%";
+    }
+    else
+    {
+        updateData.quiz_completed = false;
+        if(attempt >= 3)
+        {
+            updateData.module_result ="FAIL";
+        }
+        else
+        {
+            updateData.module_result = "Retest";
+            updateData.video_completed = false;
+            updateData.video_lastwatched ="0";
+        }
+    }
+    await client.from("studentcoursetracking").update(updateData).eq("reg_no",studentRegno).eq("course_name",courseName).eq("module_name",moduleName);
+    if(result === "PASS")
     {
         successMsg.innerHTML =
-
         `
         🎉 Passed
         <br><br>
-        Score :
-        ${percent}%
+        Score : ${percent}%
+        <br><br>
+        Attempt : ${attempt}/3
         `;
 
         successMsg.style.display =
         "block";
-
-        setTimeout(
-        function()
-        {
-            location.href =
-            "coursePage.html?id="+
-            courseId;
-        },
-        2500
-        );
     }
     else
     {
         failMsg.innerHTML =
+`
+❌ Failed
+<br><br>
+Score : ${percent}%
+<br><br>
+Attempt : ${attempt}/3
+<br><br>
 
-        `
-        ❌ Failed
-        <br><br>
-        Score :
-        ${percent}%
-        <br><br>
-        Retest Required
-        `;
+<button
+    onclick="
+        location.href='modulePage.html?id=${moduleId}&course=${courseId}'
+    "
+    style="
+        border:none;
+        padding:12px 24px;
+        border-radius:12px;
+        cursor:pointer;
+        font-weight:600;
+        margin-top:10px;
+    ">
+    ▶ Watch Video Again
+</button>
+`;
 
         failMsg.style.display =
         "block";
-
-        submitBtn.innerHTML =
-        "🔄 Retest";
-
-        submitBtn.onclick =
-        function()
-        {
-            location.reload();
-        };
     }
+
+    const { data: allModules } =await client.from("studentcoursetracking").select("*").eq("reg_no", studentRegno).eq("course_name", courseName);
+    const courseCompleted =  allModules && allModules.length > 0 && allModules.every(
+        m =>
+            m.module_result === "PASS" ||
+            m.module_result === "FAIL"
+    );
+
+    if (courseCompleted)
+    {
+        const totalScore = allModules.reduce((sum, m) => sum + parseFloat((m.module_score || "0").replace("%", "") ), 0);
+        const averageScoreNum=(totalScore / allModules.length).toFixed(2);
+        let overallResult=null;
+        if(averageScoreNum >=60)
+          overallResult="PASS";
+        else
+          overallResult="FAIL";
+        const averageScore = (
+            totalScore /
+            allModules.length
+        ).toFixed(2) + "%";
+
+
+    const studentName =
+        localStorage.getItem(
+            "studentName"
+        );
+
+   
+     await client.from("studentenrollment")
+        .update({
+            student_status: "Completed",
+            course_completed:true,
+            mark_obtained:averageScore.toString(),
+            overall_result:overallResult,
+            cerificate_issued:true
+
+        })
+        .eq("reg_no", studentRegno)
+        .eq("course_name", courseName);
+
+    
+
+    console.log(
+        "Average Score:",
+        averageScore
+    );
+}
+   
 };
 
 loadQuiz();
