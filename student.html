@@ -20,232 +20,437 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
       rel="stylesheet">
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Poppins,sans-serif;
+/* Design Tokens & CSS Variables */
+:root {
+    --bg-primary: #080b11;
+    --bg-secondary: #0f131a;
+    --bg-sidebar: #0b0e14;
+    --bg-card: rgba(18, 24, 38, 0.6);
+    --bg-input: rgba(30, 41, 59, 0.4);
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-blue: #2563eb;
+    --accent-blue-glow: rgba(37, 99, 235, 0.4);
+    --accent-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+    --accent-gradient-hover: linear-gradient(135deg, #1d4ed8 0%, #2563eb 50%, #3b82f6 100%);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    --sidebar-width: 260px;
+    --radius-lg: 20px;
+    --radius-md: 14px;
+    --font-main: 'Plus Jakarta Sans', sans-serif;
+    --font-display: 'Space Grotesk', sans-serif;
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-body{
-    background:
-    linear-gradient(
-        135deg,
-        #020617,
-        #0f172a,
-        #172554,
-        #1d4ed8
-    );
-    min-height:100vh;
-    overflow:hidden;
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #ffffff;
+    --bg-sidebar: #0f172a;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-input: rgba(241, 245, 249, 0.8);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    --accent-blue: #3b82f6;
+    --accent-blue-glow: rgba(59, 130, 246, 0.2);
+    --accent-gradient: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    --accent-gradient-hover: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    --border-color: #e2e8f0;
+    --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
 }
 
-/* MAIN LAYOUT */
-
-.dashboard{
-    display:flex;
-    height:100vh;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--font-main);
 }
 
-/* SIDEBAR */
-
-.sidebar{
-    width:250px;
-    background:
-        rgba(255,255,255,0.08);
-
-    backdrop-filter:blur(18px);
-
-    border-right:
-        1px solid rgba(255,255,255,0.08);
-
-    padding:20px;
-
-    display:flex;
-    flex-direction:column;
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    overflow-x: hidden;
+    transition: var(--transition-smooth);
 }
 
-/* LOGO */
-
-.logo{
-    font-size:30px;
-    color:white;
-    font-weight:700;
-    margin-bottom:35px;
+/* BACKGROUND GLOWS (Dark Mode Only) */
+.bg-glow-1 {
+    position: fixed;
+    width: 500px;
+    height: 500px;
+    border-radius: 50%;
+    background: #2563eb;
+    top: -200px;
+    left: -200px;
+    filter: blur(180px);
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: 0;
 }
 
-/* MENU */
-
-.sidebar ul{
-    list-style:none;
+.bg-glow-2 {
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: #3b82f6;
+    bottom: -250px;
+    right: -200px;
+    filter: blur(200px);
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
 }
 
-.sidebar li{
-    color:white;
-    padding:14px 18px;
-    margin-bottom:12px;
-    border-radius:14px;
-    cursor:pointer;
-    transition:0.3s;
-
-    background:
-        rgba(255,255,255,0.05);
-
-    font-size:17px;
+[data-theme="light"] .bg-glow-1,
+[data-theme="light"] .bg-glow-2 {
+    display: none;
 }
 
-.sidebar li:hover{
-    background:
-        rgba(255,255,255,0.15);
-
-    transform:
-        translateX(5px);
+.layout {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
 }
 
-.sidebar li.active{
-    background:
-        linear-gradient(
-            135deg,
-            #2563eb,
-            #3b82f6
-        );
+.sidebar {
+    width: var(--sidebar-width);
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex-shrink: 0;
+    z-index: 10;
+    transition: var(--transition-smooth);
 }
 
-/* RIGHT PANEL */
-
-.right-panel{
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    height:100vh;
-    overflow:hidden;
+.sidebar-top {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
 }
 
-/* TOPBAR */
-
-.topbar{
-    height:90px;
-
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-
-    padding:20px 30px;
-
-    background:
-        rgba(255,255,255,0.06);
-
-    backdrop-filter:blur(18px);
-
-    border-bottom:
-        1px solid rgba(255,255,255,0.08);
-
-    flex-shrink:0;
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 8px;
 }
 
-.topbar h1{
-    color:white;
-    font-size:34px;
-    font-weight:700;
+.logo-circle {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--accent-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+    box-shadow: 0 8px 20px var(--accent-blue-glow);
 }
 
-.topbar p{
-    color:#cbd5e1;
-    margin-top:6px;
-    font-size:14px;
+.logo-text h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
 }
 
-/* PROFILE */
-
-.profile img{
-    width:60px;
-    height:60px;
-    border-radius:50%;
-    border:3px solid white;
+.logo-text p {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
 }
 
-/* CONTENT */
-
-.main-content{
-    flex:1;
-    overflow:hidden;
+.sidebar ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-/* IFRAME */
-
-#contentFrame{
-    width:100%;
-    height:100%;
-    border:none;
-    display:block;
-    background:transparent;
+.sidebar li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    color: #94a3b8;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: var(--transition-smooth);
 }
 
-.profile{
-    display:flex;
-    align-items:center;
-    gap:12px;
+.sidebar li i {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
 }
 
-.user-info{
-    color:white;
-    font-size:16px;
-    font-weight:600;
-    background:rgba(255,255,255,0.1);
-    padding:10px 16px;
-    border-radius:12px;
+.sidebar li:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateX(4px);
 }
 
+.sidebar li.active {
+    color: #ffffff;
+    background: var(--accent-gradient);
+    box-shadow: 0 6px 20px var(--accent-blue-glow);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.theme-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition-smooth);
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
+}
+
+.profile-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+}
+
+.profile-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--accent-gradient);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+}
+
+.profile-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.profile-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profile-role {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.logout-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    transition: var(--transition-smooth);
+}
+
+.logout-btn:hover {
+    color: var(--accent-red);
+    transform: scale(1.1);
+}
+
+.content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow-y: auto;
+    position: relative;
+    background: transparent;
+    transition: var(--transition-smooth);
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    background: transparent;
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border-color);
+    padding: 20px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 5;
+    transition: var(--transition-smooth);
+}
+
+.topbar-left h1 {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.topbar-left p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.topbar-badge {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.topbar-badge .dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-green);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent-green);
+}
+
+.main-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+#contentFrame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+    background: transparent;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        height: 100vh;
+        box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+    }
+    .sidebar.active {
+        left: 0;
+    }
+}
 </style>
 
 </head>
 
-<body>
+<body data-theme="dark">
 
-<div class="dashboard">
+<div class="bg-glow-1"></div>
+<div class="bg-glow-2"></div>
+
+<div class="layout">
     <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="logo">
-            NextGen Edu
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-top">
+            <div class="logo">
+                <div class="logo-circle">NEC</div>
+                <div class="logo-text">
+                    <h2>Student Portal</h2>
+                    <p>Learning Workspace</p>
+                </div>
+            </div>
+
+            <ul class="menu">
+                <li class="active" onclick="loadPage('studentdashboardPage.html',this)">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </li>
+
+                <li onclick="loadPage('studentcertificatePage.html',this)">
+                    <i class="fa-solid fa-certificate"></i> Certificates
+                </li>
+            </ul>
         </div>
-
-        <ul>
-            <li class="active" onclick="loadPage('studentdashboardPage.html',this)">
-                Dashboard
-            </li>
-
-            <li onclick="loadPage('studentcertificatePage.html',this)">
-                Certificates
-            </li>
-            <li onclick="logout()">
-                Logout
-            </li>
-        </ul>
+        
+        <div class="sidebar-bottom">
+            <button class="theme-toggle-btn" onclick="toggleTheme()">
+                <i class="fa-solid fa-sun" id="theme-icon"></i>
+                <span id="theme-text">Light Mode</span>
+            </button>
+            <div class="profile-card">
+                <div class="profile-avatar">S</div>
+                <div class="profile-info">
+                    <div class="profile-name" id="studentName">Loading...</div>
+                    <div class="profile-role">Student</div>
+                </div>
+                <button class="logout-btn" onclick="logout()" title="Logout">
+                    <i class="fa-solid fa-sign-out-alt"></i>
+                </button>
+            </div>
+        </div>
     </aside>
 
     <!-- RIGHT PANEL -->
-    <div class="right-panel">
+    <div class="content">
         <!-- TOPBAR -->
-        <div class="topbar">
-            <div>
-                <h1>
-                    Welcome Back 👋
-                </h1>
-                <p>
-                    Continue your learning journey
-                </p>
+        <header class="topbar">
+            <div class="topbar-left">
+                <h1>Welcome Back</h1>
+                <p>Continue your learning journey</p>
             </div>
-         <div class="profile">
-    <div class="user-info">
-        <span id="studentName">Loading...</span>
-    </div>
-</div>
-        </div>
+            <div class="topbar-right">
+                <div class="topbar-badge">
+                    <div class="dot"></div>
+                    <span>Supabase Connected</span>
+                </div>
+            </div>
+        </header>
 
         <!-- PAGE CONTENT -->
-
         <main class="main-content">
             <iframe id="contentFrame" src="studentdashboardPage.html">
             </iframe>
@@ -263,6 +468,11 @@ body{
 <script>
 document.addEventListener("DOMContentLoaded", async () =>
 {
+    // Check Theme
+    const savedTheme = localStorage.getItem("student-theme") || "dark";
+    document.documentElement.setAttribute("data-theme", savedTheme);
+    updateThemeToggleButton(savedTheme);
+
     try
     {
         const regNo = localStorage.getItem("user");
@@ -320,6 +530,32 @@ function logout()
     window.location.href = "login.html";
 }
 
+function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute("data-theme");
+    const newTheme = currentTheme === "dark" ? "light" : "dark";
+    
+    document.documentElement.setAttribute("data-theme", newTheme);
+    localStorage.setItem("student-theme", newTheme);
+    updateThemeToggleButton(newTheme);
+
+    // Communicate to iframe to also update its theme
+    const iframe = document.getElementById("contentFrame");
+    if (iframe.contentWindow) {
+        iframe.contentWindow.postMessage({ type: 'themeChange', theme: newTheme }, '*');
+    }
+}
+
+function updateThemeToggleButton(theme) {
+    const icon = document.getElementById("theme-icon");
+    const text = document.getElementById("theme-text");
+    if (theme === "light") {
+        icon.className = "fa-solid fa-moon";
+        text.innerText = "Dark Mode";
+    } else {
+        icon.className = "fa-solid fa-sun";
+        text.innerText = "Light Mode";
+    }
+}
 </script>
 </body>
 </html>

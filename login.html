@@ -12,6 +12,33 @@
 
     <style>
 
+        /* Design Tokens & CSS Variables */
+        :root {
+            --bg-primary: #080b11;
+            --bg-secondary: #0f131a;
+            --bg-sidebar: #0b0e14;
+            --bg-card: rgba(18, 24, 38, 0.6);
+            --bg-input: rgba(30, 41, 59, 0.4);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #2563eb;
+            --accent-blue-glow: rgba(37, 99, 235, 0.4);
+            --accent-gradient: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-focus: rgba(37, 99, 235, 0.6);
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            --radius-lg: 20px;
+            --radius-md: 14px;
+            --radius-sm: 8px;
+            --font-main: 'Plus Jakarta Sans', sans-serif;
+            --font-display: 'Space Grotesk', sans-serif;
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         * {
 
             margin: 0;
@@ -22,26 +49,15 @@
         }
 
         body {
-
-            font-family: "Segoe UI", sans-serif;
-
+            font-family: var(--font-main);
             height: 100vh;
-
             display: flex;
-
             justify-content: center;
-
             align-items: center;
-
             overflow: hidden;
-
-            background:
-                linear-gradient(
-                    135deg,
-                    #020617,
-                    #0f172a,
-                    #1e3a8a
-                );
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: var(--transition-smooth);
         }
 
         /* BACKGROUND GLOW */
@@ -457,14 +473,14 @@
     </style>
 <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 
-<body>
+<body data-theme="dark">
 
     <!-- BACKGROUND -->
-
     <div class="bg1"></div>
-
     <div class="bg2"></div>
 
     <!-- LOGIN CARD -->
@@ -502,7 +518,7 @@
 
                     <div class="role-icon">
 
-                        🎓
+                        <i class="fa-solid fa-graduation-cap"></i>
 
                     </div>
 
@@ -518,9 +534,7 @@
                      onclick="selectRole(this,'Tutor')">
 
                     <div class="role-icon">
-
-                        👨‍🏫
-
+                        <i class="fa-solid fa-chalkboard-user"></i>
                     </div>
 
                     <div class="role-info">
@@ -535,9 +549,7 @@
                      onclick="selectRole(this,'Admin')">
 
                     <div class="role-icon">
-
-                        🛡️
-
+                        <i class="fa-solid fa-shield-halved"></i>
                     </div>
 
                     <div class="role-info">
