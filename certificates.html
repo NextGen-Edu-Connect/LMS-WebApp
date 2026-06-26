@@ -17,6 +17,23 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
+    :root{
+    --bg-primary:linear-gradient(135deg,#020617,#0f172a,#172554,#1d4ed8);
+    --card-bg:rgba(255,255,255,0.08);
+    --text-primary:#ffffff;
+    --text-secondary:#cbd5e1;
+    --border-color:rgba(255,255,255,0.08);
+    --shadow:0 10px 25px rgba(0,0,0,.25);
+}
+
+[data-theme="light"]{
+    --bg-primary:#f5f7fb;
+    --card-bg:#ffffff;
+    --text-primary:#0f172a;
+    --text-secondary:#475569;
+    --border-color:#e2e8f0;
+    --shadow:0 10px 25px rgba(0,0,0,.08);
+}
 
 *{
     margin:0;
@@ -28,36 +45,31 @@
 body{
     min-height:100vh;
     padding:30px;
-
-    background:
-    linear-gradient(
-        135deg,
-        #020617,
-        #0f172a,
-        #172554,
-        #1d4ed8
-    );
-
-    color:white;
+    background:var(--bg-primary);
+    color:var(--text-primary);
+    transition:.3s;
 }
 
 .page-title{
     text-align:center;
     font-size:40px;
     margin-bottom:30px;
+    color:var(--text-primary);
 }
 
 .section-title{
     font-size:28px;
     margin-bottom:20px;
+    color:var(--text-primary);
 }
-.course-card
-{
-    background:rgba(255,255,255,0.08);
+.course-card{
+    background:var(--card-bg);
+    border:1px solid var(--border-color);
     backdrop-filter:blur(18px);
     border-radius:24px;
     padding:20px;
     min-height:220px;
+    box-shadow:var(--shadow);
 }
 #courseCertificates
 {
@@ -77,25 +89,25 @@ body{
     margin-bottom:40px;
 }
 
-.cert-card
-{
-    background: rgba(255,255,255,0.08);
-    backdrop-filter: blur(18px);
-    border-radius: 20px;
-    padding: 20px;
+.cert-card{
+    background:var(--card-bg);
+    border:1px solid var(--border-color);
+    backdrop-filter:blur(18px);
+    border-radius:20px;
+    padding:20px;
+    box-shadow:var(--shadow);
 }
 
-.cert-title
-{
-    font-size: 24px;
-    margin-bottom: 8px;
+.cert-title{
+    font-size:24px;
+    margin-bottom:10px;
+    color:var(--text-primary);
 }
 
-.cert-info
-{
-    font-size: 15px;
-    margin-bottom: 5px;
-    color: #dbeafe;
+.cert-info{
+    font-size:15px;
+    margin-bottom:8px;
+    color:var(--text-secondary);
 }
 
 .btn-row
@@ -105,14 +117,19 @@ body{
     margin-top:15px;
 }
 
-.btn
-{
-    padding:12px;
+.btn{
+    padding:12px 18px;
     border:none;
     border-radius:12px;
     font-size:14px;
     font-weight:600;
     cursor:pointer;
+    color:white;
+    transition:.3s;
+}
+
+.btn:hover{
+    transform:translateY(-2px);
 }
 
 .view-btn{
@@ -125,8 +142,9 @@ body{
 
 .empty{
     text-align:center;
-    color:#cbd5e1;
-    padding:20px;
+    color:var(--text-secondary);
+    padding:40px;
+    font-size:18px;
 }
 
 .back-btn{
@@ -152,6 +170,29 @@ const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
 const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
 
 const studentRegno =localStorage.getItem("user");
+
+const savedTheme =
+    localStorage.getItem("student-theme") || "dark";
+
+document.documentElement.setAttribute("data-theme", savedTheme);
+document.body.setAttribute("data-theme", savedTheme);
+
+window.addEventListener("message",(event)=>{
+
+    if(event.data.type==="themeChange"){
+
+        document.documentElement.setAttribute(
+            "data-theme",
+            event.data.theme
+        );
+
+        document.body.setAttribute(
+            "data-theme",
+            event.data.theme
+        );
+    }
+
+});
 
 async function loadCertificates()
 {

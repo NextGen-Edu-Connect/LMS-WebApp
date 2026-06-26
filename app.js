@@ -126,61 +126,75 @@ async function login(username, password, role)
 
 /* CREATE USER */
 
-async function createUser()
+window.createUser = async function () 
 {
-    const username = document.getElementById("newUsername").value.trim();
-    const password = document.getElementById("newPassword").value.trim();
-    const role = document.getElementById("newRole").value;
-
+    const username =document.getElementById("newUsername").value;
+    const password=document.getElementById("newPassword").value;
+    const role =document.getElementById("newRole").value;
+    const user_status ="Registered";
     if (!username || !password)
     {
-        showMessage("Please enter username and password");
+    alert("Please enter username and password.");
         return;
     }
-
-    // Check duplicate username
-    const { data: existingUser, error: checkError } = await client
-        .from("login")
-        .select("id")
-        .eq("username", username)
-        .maybeSingle();
-
-    if (checkError)
-    {
-        showMessage(checkError.message);
-        return;
-    }
-
-    if (existingUser)
-    {
-        alert("Username already exists");
-        return;
-    }
-
-    // Insert user
-    const { error } = await client
-        .from("login")
-        .insert([
+     if (role === "Student" && !studentName) 
         {
-            username: username,
-            password: password,
-            role: role,
-            user_status: "Registered"
-        }
-        ]);
+        alert("Please enter the student name.");
+        return;
+    }
+    const { error } = await client.from("login").insert([
+                {
+                    username,
+                    password,
+                    role,
+                    user_status
+                }
+            ]);
 
-    if (error)
+    if (error) 
     {
-        alert(error.message);
+        showMessage(error.message);
         return;
     }
 
-    alert("User created successfully");
+    if (role === "Student")
+    {
+        const reg_no = username;
+        const student_status = "Registered";
+        const student_name = document.getElementById("studentName").value.trim();
+
+        const { error: errorProfile } = await client
+            .from("studentprofile")
+            .insert([
+                {
+                    reg_no,
+                    student_name,
+                    mail_id: null,
+                    phone_no: null,
+                    gender: null,
+                    department: null,
+                    college_name: null,
+                    college_code: null,
+                    district: null,
+                    university: null,
+                    student_status
+                }
+            ]);
+
+        if (errorProfile)
+        {
+            showMessage(errorProfile.message);
+            return;
+        }
+    }
+
+    /* CLEAR FIELDS */
 
     document.getElementById("newUsername").value = "";
     document.getElementById("newPassword").value = "";
     document.getElementById("newRole").selectedIndex = 0;
-}
+    alert("User Created Successfully");
+};
 // window.bulkCreateUsers = async function ()
 // {
 //     const file = document.getElementById("studentFile").files[0];
@@ -595,6 +609,8 @@ async function editUser(id)
     document.getElementById("editUsername").value = data.username;
     document.getElementById("editPassword").value = data.password;
     document.getElementById("editRole").value = data.role;
+     // Store old register number
+    document.getElementById("editOldRegNo").value = data.username;
     document.getElementById("editUserModal").style.display = "flex";
 }
 
@@ -611,7 +627,9 @@ async function updateUser()
 {
     const id =document.getElementById("editUserId").value;
     const username = document.getElementById("editUsername").value;
+    const reg_no = document.getElementById("editUsername").value;
     const password =document.getElementById("editPassword").value;
+    const oldRegNo =document.getElementById("editOldRegNo").value;
     const role =document.getElementById("editRole").value;
     const { error } =
         await client
@@ -628,6 +646,22 @@ async function updateUser()
         alert(error.message);
         return;
     }
+
+    const { errorUpdate } =
+        await client
+            .from("studentprofile")
+            .update({
+                reg_no    
+            })
+            .eq("reg_no", oldRegNo);
+
+    if (errorUpdate) 
+    {
+        alert(errorUpdate.message);
+        return;
+    }
+
+
     alert("User Updated Successfully");
     closeEditModal();
     loadUsers();
@@ -683,7 +717,7 @@ async function loadCoursesDropdown()
 
 window.addCourse = async function ()
 {
-    const title = document.getElementById("courseTitle").value;
+    const course_name = document.getElementById("courseTitle").value;
     const description =document.getElementById("courseDescription").value;
     const file =document.getElementById("courseThumbnail").files[0];
     if (!file)
@@ -716,7 +750,7 @@ window.addCourse = async function ()
             .from("courses")
             .insert([
                 {
-                    title,
+                    course_name,
                     description,
                     thumbnail
                 }
@@ -755,7 +789,7 @@ async function loadCoursesTable()
         body.innerHTML += `
             <tr>
                 <td>
-                    ${course.title}
+                    ${course.course_name}
                 </td>
 
                 <td>
@@ -800,7 +834,7 @@ window.openEditCourseModal =async function (id)
     }
 
     document.getElementById("editCourseId").value = data.id;
-    document.getElementById("editCourseName").value = data.title;
+    document.getElementById("editCourseName").value = data.course_name;
     document.getElementById("editCourseDescription").value = data.description;
     document.getElementById("previewThumbnail").src = data.thumbnail;
     document.getElementById("editCourseModal").style.display = "flex";
@@ -811,7 +845,7 @@ window.openEditCourseModal =async function (id)
 window.updateCourse =async function ()
 {
     const id =document.getElementById("editCourseId").value;
-    const title =document.getElementById("editCourseName").value;
+    const course_name =document.getElementById("editCourseName").value;
     const description =document.getElementById("editCourseDescription").value;
     const file =document.getElementById("editCourseThumbnail").files[0];
     let thumbnail =document.getElementById("previewThumbnail").src;
@@ -833,7 +867,7 @@ window.updateCourse =async function ()
     }
 
     /* UPDATE DATABASE */
-    const { error } = await client.from("courses").update({title,description,thumbnail}).eq("id", id);
+    const { error } = await client.from("courses").update({course_name,description,thumbnail}).eq("id", id);
     if (error)
     {
         alert(error.message);
@@ -934,6 +968,7 @@ window.addVideo = async function () {
     document.getElementById("videoFile").value = "";
     document.getElementById("videoFile").value = "";
     document.getElementById("quizId").value="";
+     loadQuizDropdown();
 };
 
 async function loadVideosTable()
@@ -956,7 +991,7 @@ async function loadVideosTable()
     videos.forEach(video => {
         // Find course name using course_id
         const course =courses.find(c => c.id == video.course_id);
-        const courseName =course? course.title: "";
+        const courseName =course? course.course_name: "";
         body.innerHTML += `
             <tr>
                 <td>
@@ -1009,7 +1044,7 @@ window.openEditVideoModal = async function (id)
     {
         courseDropdown.innerHTML += `
             <option value="${course.id}">
-                ${course.title}
+                ${course.course_name}
             </option>
         `;
     });
@@ -1060,6 +1095,7 @@ async function updateVideo()
     alert("Video Updated Successfully");
     closeVideoModal();
     loadVideosTable();
+     loadQuizDropdown();
 }
 
 async function deleteVideo(id)
@@ -1093,6 +1129,7 @@ async function deleteVideo(id)
     }
     alert("Video Deleted Successfully");
     loadVideosTable();
+     loadQuizDropdown();
 }
 
 function closeVideoModal()
@@ -1275,7 +1312,7 @@ window.updateQuiz =async function (id)
         return;
     }
     alert("Quiz Updated Successfully");
-    closeVideoModal();
+    closeQuizModal();
     loadQuizTable();
 };
 

@@ -718,18 +718,25 @@
             <input type="password" id="newPassword" placeholder="Password" autocomplete="new-password">
         </div>
 
+        <!-- Hidden Student Name Field -->
+        <div class="input-group" id="studentNameGroup" style="display:none;">
+            <input type="text" id="studentName" placeholder="Student Name" autocomplete="off">
+        </div>
+
         <div class="input-group">
-            <select id="newRole">
+            <select id="newRole" onchange="toggleStudentName()">
                 <option value="Student">Student</option>
                 <option value="Tutor">Tutor</option>
             </select>
         </div>
+
         <div class="btn-container">
             <button class="btn" onclick="createUser()">
                 Create User
             </button>
         </div>
     </div>
+
 
     <!-- BULK User Creation -->
 
@@ -1076,6 +1083,8 @@
             </span>
         </div>
         <input type="hidden" id="editUserId">
+         <!-- Add this -->
+        <input type="hidden" id="editOldRegNo">
         <div class="input-group">
             <input type="text"
                    id="editUsername"
@@ -1301,6 +1310,32 @@
 
     videoCourse.addEventListener("change",generateQuizId);
     moduleName.addEventListener("input",generateQuizId);
+
+     function logout() {
+            const isConfirmed = confirm("Are you sure you want to logout from the admin Portal?");
+            if (isConfirmed) {
+                localStorage.removeItem("user");
+                localStorage.removeItem("role");
+                window.location.href = "login.html";
+            }
+        }
+
+        function toggleStudentName() {
+    const role = document.getElementById("newRole").value;
+    const studentNameGroup = document.getElementById("studentNameGroup");
+
+    if (role === "Student") {
+        studentNameGroup.style.display = "block";
+    } else {
+        studentNameGroup.style.display = "none";
+        document.getElementById("studentName").value = "";
+    }
+}
+
+// Run once when page loads
+document.addEventListener("DOMContentLoaded", function () {
+    toggleStudentName();
+});
 
 </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
