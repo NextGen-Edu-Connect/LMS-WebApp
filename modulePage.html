@@ -178,6 +178,55 @@ video{
     margin-top:18px;
 }
 
+.button-group{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:20px;
+    flex-wrap:wrap;
+}
+
+#quizBtn,
+#assignmentBtn{
+
+    border:none;
+    padding:18px 36px;
+    border-radius:20px;
+    font-size:18px;
+    font-weight:600;
+    color:white;
+    background:rgba(255,255,255,0.1);
+    transition:.35s;
+}
+
+#quizBtn{
+    cursor:not-allowed;
+}
+
+#quizBtn.enabled,
+#assignmentBtn.enabled{
+
+    cursor:pointer;
+
+    background:linear-gradient(
+        135deg,
+        #06b6d4,
+        #2563eb
+    );
+
+    box-shadow:0 12px 28px rgba(37,99,235,.35);
+}
+
+#quizBtn.enabled:hover,
+#assignmentBtn.enabled:hover{
+    transform:translateY(-4px);
+}
+
+/* Hide Assignment button initially */
+#assignmentBtn{
+    display:none;
+}
+
 </style>
 
 </head>
@@ -187,10 +236,7 @@ video{
 <div class="back-btn"
      onclick="
      location.href=
-     'coursePage.html?course_name=' +
-     encodeURIComponent(
-         localStorage.getItem('selectedCourseName')
-     )">
+     'coursePage.html?course_name=' + encodeURIComponent(localStorage.getItem('selectedCourseName'))">
     ← Back
 </div>
 
@@ -201,33 +247,22 @@ video{
     </h1>
 
     <div class="video-wrapper">
-
-        <video id="videoPlayer"
-               controls>
-
+        <video id="videoPlayer" controls>
         </video>
-
     </div>
 
     <div class="quiz-section">
-
-        <button id="quizBtn"
-                disabled>
-
-            🔒 Complete Video to Start Quiz
-
+        <button id="quizBtn"  disabled>
+            🔒 Complete Video to Start Quiz/Assignment
         </button>
-
-        <div class="info">
-
+        <button id="assignmentBtn" style="display:none;">
+            📄 View Assignment
+        </button>
+        <div class="info" id="quizInfo">
             Watch the full video to unlock quiz
-
         </div>
-
     </div>
-
 </div>
-
 <script>
 
 const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
@@ -239,6 +274,7 @@ const params =new URLSearchParams(window.location.search);
 const moduleId =params.get("id");
 const courseId =params.get("course");
 let quizId = "";
+let assignmentId="";
 const video =document.getElementById("videoPlayer");
 const studentRegno =localStorage.getItem("user");
 
@@ -268,15 +304,14 @@ async function loadModule()
     window.moduleName =data.module_name;
     window.courseName =  course.course_name;
     quizId = data.quiz_id;
+    assignmentId=data.assignment_id;
 
     /* UI */
     document.getElementById("moduleTitle").innerHTML =  data.module_name;
     document.getElementById("videoPlayer").src = data.video_url;
 
     /* TRACKING */
-    const {data: tracking,error: trackingError}=await client
-    .from("studentcoursetracking").select("video_lastwatched,video_completed")
-    .eq("reg_no",studentRegno).eq("course_name",course.course_name).eq("module_name",data.module_name).maybeSingle();
+    const {data: tracking,error: trackingError}=await client.from("studentcoursetracking").select("video_lastwatched,video_completed").eq("reg_no",studentRegno).eq("course_name",course.course_name).eq("module_name",data.module_name).maybeSingle();
     console.log("Tracking:",tracking);
     video.load();
 
@@ -306,8 +341,24 @@ setInterval(async function()
     {
         return;
     }
+    const {data: tracking,error: trackingError}=await client.from("studentcoursetracking").select("quiz_availble,assignment_availble").eq("reg_no",studentRegno).eq("course_name",courseName).eq("module_name",moduleName).maybeSingle();
+    const quizAvailable=tracking.quiz_availble;
+    const assignmentAvailable=tracking.assignment_availble;
     const percentage =Math.round((video.currentTime / video.duration) * 100);
-    const moduleScore=(Math.round(percentage*0.7)).toString()+"%";
+
+    let moduleScore="";
+    if(assignmentAvailable && quizAvailable)
+    {
+        moduleScore=(Math.round(percentage*0.5)).toString()+"%";
+    }
+    else if(!assignmentAvailable && quizAvailable)
+    {
+        moduleScore=(Math.round(percentage*0.7)).toString()+"%";
+    }
+    else if(assignmentAvailable && !quizAvailable)
+    {
+        moduleScore=(Math.round(percentage*0.8)).toString()+"%";
+    }
     await client.from("studentcoursetracking").update({
             video_lastwatched:video.currentTime.toString(),
             module_score:moduleScore
@@ -319,59 +370,149 @@ video.addEventListener("pause",async function()
     {
         return;
     }
+    const {data: tracking,error: trackingError}=await client.from("studentcoursetracking").select("quiz_availble,assignment_availble").eq("reg_no",studentRegno).eq("course_name",courseName).eq("module_name",moduleName).maybeSingle();
+    const quizAvailable=tracking.quiz_availble;
+    const assignmentAvailable=tracking.assignment_availble;
     const percentage =Math.round((video.currentTime /video.duration) * 100);
-    const moduleScore=(Math.round(percentage*0.7)).toString()+"%";
+    let moduleScore="";
+    if(assignmentAvailable && quizAvailable)
+    {
+        moduleScore=(Math.round(percentage*0.5)).toString()+"%";
+    }
+    else if(!assignmentAvailable && quizAvailable)
+    {
+        moduleScore=(Math.round(percentage*0.7)).toString()+"%";
+    }
+    else if(assignmentAvailable && !quizAvailable)
+    {
+        moduleScore=(Math.round(percentage*0.8)).toString()+"%";
+    }
     
     await client.from("studentcoursetracking").update({
             video_lastwatched: video.currentTime.toString(),
             module_score:moduleScore
         }).eq("reg_no",studentRegno).eq("course_name",courseName).eq("module_name",moduleName );});
 
-video.onended =
-async function()
+    video.onended =async function()
+    {
+        const {data: tracking,error: trackingError}=await client.from("studentcoursetracking").select("quiz_availble,assignment_availble").eq("reg_no",studentRegno).eq("course_name",courseName).eq("module_name",moduleName).maybeSingle();
+        const quizAvailable=tracking.quiz_availble;
+        const assignmentAvailable=tracking.assignment_availble;
+        const percentage =Math.round((video.currentTime /video.duration) * 100);
+        let moduleScore="";
+        if(assignmentAvailable && quizAvailable)
+        {
+            moduleScore=(Math.round(percentage*0.5)).toString()+"%";
+        }
+        else if(!assignmentAvailable && quizAvailable)
+        {
+            moduleScore=(Math.round(percentage*0.7)).toString()+"%";
+        }
+        else if(assignmentAvailable && !quizAvailable)
+        {
+            moduleScore=(Math.round(percentage*0.8)).toString()+"%";
+        }
+        await client.from("studentcoursetracking").update({
+            video_completed:true,
+            video_lastwatched: video.duration.toString(),
+            module_score:moduleScore
+        }).eq("reg_no", studentRegno).eq("course_name",courseName).eq("module_name",moduleName);
+
+        enableQuizButton();
+    };
+
+async function enableQuizButton()
 {
+    // Enable Quiz Button
+    let hasQuiz = false;
+     // Check whether this module has an assignment
+    const { data: quiz } = await client.from("quizzes") .select("id").eq("quiz_id", quizId);
+    hasQuiz = quiz != null;
+
+     const {data: tracking,error: trackingError}=await client.from("studentcoursetracking").select("quiz_completed,assignment_validated").eq("reg_no",studentRegno).eq("course_name",courseName).eq("module_name",moduleName).maybeSingle();
+     const quizCompleted=tracking.quiz_completed;
+     const assignmentValidated=tracking.assignment_validated;
+    const quizBtn = document.getElementById("quizBtn");
+    const quizInfo = document.getElementById("quizInfo");
+    if(hasQuiz)
+    {
+        quizInfo.style.display = "none";
+        if(!quizCompleted)
+        {
+            quizBtn.disabled = false;
+            quizBtn.classList.add("enabled");
+            quizBtn.innerHTML = "📝 Start Quiz";
+            quizBtn.onclick = function()
+            {
+                location.href =
+                    "quizPage.html"+
+                    "?quiz="+quizId+
+                    "&module="+moduleId+
+                    "&course="+courseId+
+                    "&moduleName="+encodeURIComponent(moduleName)+
+                    "&courseName="+encodeURIComponent(courseName);
+            };
+        }
+        else
+        {
+            quizBtn.disabled = true;
+            quizBtn.classList.add("disabled");
+            quizBtn.innerHTML = "📝 Completed Quiz";
+        }
+       
+    }
+    else
+    {
+        quizBtn.disabled = true;
+        quizBtn.classList.add("disabled");
+        quizBtn.innerHTML = "📝 No Quiz";
+    }
+
+    let hasAssignment = false;
+    // Show Assignment Button
+        // Check whether this module has an assignment
+    const { data: assignment } = await client .from("assignments") .select("id").eq("assignment_id", assignmentId).maybeSingle();
+    hasAssignment = assignment != null;
+
+    if(hasAssignment)
+    {
+        if(!assignmentValidated)
+        {
+            assignmentBtn.style.display = "inline-block";
+            assignmentBtn.classList.add("enabled");
+
+            assignmentBtn.onclick = function()
+            {
+                location.href =
+                    "assignmentPage.html"+
+                    "?assignment="+assignmentId+
+                    "&module="+moduleId+
+                    "&course="+courseId+
+                    "&moduleName="+encodeURIComponent(moduleName)+
+                    "&courseName="+encodeURIComponent(courseName);
+            };
+        }
+        else
+        {
+            assignmentBtn.style.display = "inline-block";
+            assignmentBtn.classList.add("disabled");
+            assignmentBtn.innerHTML = "📝 Completed Assignment";
+        }
+        
+    }
+    else
+    {   
+        assignmentBtn.disabled = true;
+        assignmentBtn.classList.add("disabled");
+        assignmentBtn.innerHTML = "📝 No Assignment";
+
+    }
+
     await client.from("studentcoursetracking").update({
         video_completed:true,
-        video_lastwatched: video.duration.toString(),
-        quiz_availble:true
-    }).eq(
-        "reg_no",
-        studentRegno
-    )
-    .eq(
-        "course_name",
-        courseName
-    )
-    .eq(
-        "module_name",
-        moduleName
-    );
-
-    enableQuizButton();
-};
-
-function enableQuizButton()
-{
-    const btn =document.getElementById("quizBtn");
-    btn.disabled = false;
-    btn.classList.add("enabled");
-    btn.innerHTML ="📝 Start Quiz";
-    btn.onclick = function()
-    {
-        location.href =
-        "quizPage.html"+
-        "?quiz="+quizId+
-        "&module="+moduleId+
-        "&course="+courseId+
-        "&moduleName="+
-        encodeURIComponent(
-            moduleName
-        )+
-        "&courseName="+
-        encodeURIComponent(
-            courseName
-        );
-    };
+        video_lastwatched: video.duration.toString()
+    }).eq("reg_no", studentRegno).eq("course_name",courseName).eq("module_name",moduleName);
+    
 }
 loadModule();
 </script>

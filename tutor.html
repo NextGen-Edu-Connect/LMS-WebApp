@@ -1362,6 +1362,12 @@
                 grid-template-columns: 1fr;
             }
         }
+        button:disabled
+{
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
     </style>
 </head>
 
@@ -1813,8 +1819,6 @@
                                 <th>Student Name</th>
                                 <th>Course</th>
                                 <th>Assignment Name</th>
-                                <th>Submitted Code</th>
-                                <th>Github Link</th>
                                 <th>Status</th>
                                 <th style="text-align: center;">Action</th>
                             </tr>
@@ -1928,30 +1932,38 @@
                     <!-- Left: Source Code Viewer -->
                     <div class="code-viewer-panel">
                         <div class="code-viewer-header">
-                            <span>source_code.py</span>
-                            <span>Python IDE Mode</span>
+                            <span>
+                                <i class="fa-solid fa-file-pdf"  style="color:#ef4444"></i>
+                                Submitted Assignment
+                        </span>
+                         <a id="downloadAssignment"
+                           target="_blank"
+                           class="bulk-download-btn"
+                           style="text-decoration:none;">
+                            Download PDF
+                        </a>
                         </div>
-                        <code class="code-viewer-body" id="reviewCodeView">
-                            # Loading source code...
-                        </code>
+                        <iframe
+                        id="pdfViewer"
+                        style="
+                            width:100%;
+                            height:700px;
+                            border:none;
+                            background:white;
+                            border-radius:8px;">
+                    </iframe>
+
                     </div>
 
                     <!-- Right: Review Actions -->
                     <div style="display: flex; flex-direction: column; gap: 16px;">
-                        <div class="form-group">
-                            <label>GitHub Repository Link</label>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <a href="#" id="reviewGithubLink" target="_blank" class="bulk-download-btn" style="flex: 1; justify-content: center; text-decoration: none;">
-                                    <i class="fa-brands fa-github"></i> Open Repo
-                                </a>
-                            </div>
-                        </div>
+                      
 
                         <div class="form-group">
-                            <label for="reviewScore">Grade Score (0 - 100)</label>
+                            <label for="reviewScore">Grade Score (0 - 20)</label>
                             <div style="display: flex; align-items: center; gap: 12px;">
-                                <input type="range" id="reviewScore" min="0" max="100" value="80" style="flex: 1;" oninput="document.getElementById('reviewScoreVal').innerText = this.value">
-                                <span id="reviewScoreVal" style="font-weight: 700; width: 35px; text-align: right;">80</span>
+                                <input type="range" id="reviewScore" min="0" max="20" value="10" style="flex: 1;" oninput="document.getElementById('reviewScoreVal').innerText = this.value">
+                                <span id="reviewScoreVal" style="font-weight: 700; width: 35px; text-align: right;">10</span>
                             </div>
                         </div>
 
@@ -1963,10 +1975,10 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="pagination-btn" style="background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border-color: rgba(239, 68, 68, 0.2);" onclick="submitAssignmentDecision('Rejected')">
+                <button id="rejectBtn" class="pagination-btn" style="background: rgba(239, 68, 68, 0.1); color: var(--accent-red); border-color: rgba(239, 68, 68, 0.2);" onclick="submitAssignmentDecision('Rejected')">
                     <i class="fa-solid fa-times-circle"></i> Reject Submission
                 </button>
-                <button class="btn-submit" style="width: auto; padding: 10px 24px;" onclick="submitAssignmentDecision('Approved')">
+                <button  id="approveBtn" class="btn-submit" style="width: auto; padding: 10px 24px;" onclick="submitAssignmentDecision('Approved')">
                     <i class="fa-solid fa-check-circle"></i> Approve Submission
                 </button>
             </div>
@@ -2179,16 +2191,19 @@
 
         // DATABASE ADAPTER: LocalStorage + Supabase Hybrid Sync
         // DATABASE ADAPTER: LocalStorage + Supabase Hybrid Sync
-        async function syncDatabaseState() {
+        async function syncDatabaseState() 
+        {
             try {
                 // 1. Fetch student profiles
-                const { data: profiles, error: profErr } = await dbClient
-                    .from("studentprofile")
+                const { data: profiles, error: profErr } = await dbClient.from("studentprofile")
                     .select("*");
-                if (profErr) {
+                if (profErr) 
+                {
                     console.warn("Could not load studentprofile from database, fallback:", profErr);
                     studentProfilesList = JSON.parse(localStorage.getItem("tutor_profiles_ext")) || getMockStudentProfiles();
-                } else {
+                } 
+                else 
+                {
                     studentProfilesList = profiles || [];
                 }
 
@@ -2196,55 +2211,88 @@
                 const { data: enrollments, error: enrollErr } = await dbClient
                     .from("studentenrollment")
                     .select("*");
-                if (enrollErr) {
+                if (enrollErr) 
+                {
                     console.warn("Could not load studentenrollment from database, fallback:", enrollErr);
                     studentsData = JSON.parse(localStorage.getItem("tutor_students_ext")) || getMockStudentsList();
-                } else {
+                } 
+                else 
+                {
                     studentsData = enrollments || [];
                 }
 
                 // 3. Fetch course tracking
-                const { data: tracking, error: trackErr } = await dbClient
-                    .from("studentcoursetracking")
+                const { data: tracking, error: trackErr } = await dbClient.from("studentcoursetracking")
                     .select("*");
-                if (trackErr) {
+                if (trackErr)
+                 {
                     console.warn("Could not load studentcoursetracking from database, fallback:", trackErr);
                     courseTrackingData = JSON.parse(localStorage.getItem("tutor_tracking_ext")) || getMockTrackingList();
-                } else {
+                } else 
+                {
                     courseTrackingData = tracking || [];
                 }
 
                 // 4. Fetch assignments & logs
-                let localAssignments = JSON.parse(localStorage.getItem("tutor_assignments_ext"));
-                let localTimeline = JSON.parse(localStorage.getItem("tutor_timeline_ext"));
+                // let localAssignments = JSON.parse(localStorage.getItem("tutor_assignments_ext"));
+                // let localTimeline = JSON.parse(localStorage.getItem("tutor_timeline_ext"));
 
-                if (!localAssignments || localAssignments.length === 0) {
-                    localAssignments = getMockAssignmentsList(studentsData);
-                }
-                if (!localTimeline || localTimeline.length === 0) {
-                    localTimeline = getMockTimelineList(studentsData);
-                }
+                // if (!localAssignments || localAssignments.length === 0) 
+                // {
+                //     localAssignments = getMockAssignmentsList(studentsData);
+                // }
+                // if (!localTimeline || localTimeline.length === 0) 
+                // {
+                //     localTimeline = getMockTimelineList(studentsData);
+                // }
+
+
 
                 // Sync assignment review list
                 // If any student does not have assignment entry, create one
-                studentsData.forEach(student => {
-                    let hasAssign = localAssignments.some(a => a.studentId === student.reg_no);
-                    if (!hasAssign) {
-                        localAssignments.push({
-                            id: 'sub_' + student.reg_no,
-                            studentId: student.reg_no,
-                            studentName: student.student_name,
-                            course: student.course_name || "Generative AI",
-                            moduleName: 'Module 1: Getting Started',
-                            code: `def lms_assignment_solution():\n    # Solution developed by ${student.student_name}\n    print("Hello LMS Team Project Portal")\n    return True`,
-                            github: `https://github.com/${(student.student_name || "student").toLowerCase().replace(/\s+/g, '')}/lms-workspace`,
-                            status: 'Pending',
-                            score: 0,
-                            feedback: '',
-                            submittedAt: new Date().toISOString().split('T')[0]
-                        });
-                    }
-                });
+                // studentsData.forEach(student => {
+                //     let hasAssign = localAssignments.some(a => a.studentId === student.reg_no);
+                //     if (!hasAssign) {
+                //         localAssignments.push({
+                //             id: 'sub_' + student.reg_no,
+                //             studentId: student.reg_no,
+                //             studentName: student.student_name,
+                //             course: student.course_name || "Generative AI",
+                //             moduleName: 'Module 1: Getting Started',
+                //             code: `def lms_assignment_solution():\n    # Solution developed by ${student.student_name}\n    print("Hello LMS Team Project Portal")\n    return True`,
+                //             github: `https://github.com/${(student.student_name || "student").toLowerCase().replace(/\s+/g, '')}/lms-workspace`,
+                //             status: 'Pending',
+                //             score: 0,
+                //             feedback: '',
+                //             submittedAt: new Date().toISOString().split('T')[0]
+                //         });
+                //     }
+                // });
+
+                const { data: assignmentList, error: assignmentErr } = await dbClient
+                .from("studentcoursetracking")
+                .select("*")
+                .eq("assignment_submitted", true);
+
+                if (assignmentErr)
+                {
+                    console.error(assignmentErr);
+                    return;
+                }
+
+                localAssignments = assignmentList.map(row => ({
+                    id: row.id,
+                    studentId: row.reg_no,
+                    studentName: row.student_name,
+                    course: row.course_name,
+                    moduleName: row.module_name,
+                    assignmentUrl: row.assignment_url,
+                    status: row.assignment_validated ? "Approved" : "Submitted",
+                    score: row.assignment_mark_obtained || "",
+                    feedback: row.assignment_feedback || "",
+                    submittedAt: row.assignment_submitted_date || "",
+                    trackingId: row.id
+                }));
 
                 // Save back to local storage
                 localStorage.setItem("tutor_profiles_ext", JSON.stringify(studentProfilesList));
@@ -2264,7 +2312,9 @@
                     initBulkEnrollmentPage();
                 }
 
-            } catch (err) {
+            } 
+            catch (err)
+             {
                 console.error("Hybrid sync failure, using local state:", err);
                 studentProfilesList = JSON.parse(localStorage.getItem("tutor_profiles_ext")) || getMockStudentProfiles();
                 studentsData = JSON.parse(localStorage.getItem("tutor_students_ext")) || getMockStudentsList();
@@ -2423,8 +2473,8 @@
                     quiz_attempt: 1,
                     quiz_completed: "Yes",
                     quiz_mark_obtained: 85,
-                    assignment_available: "Yes",
-                    assignment_completed: "Yes",
+                    assignment_availble: "Yes",
+                    assignment_submitted: "Yes",
                     assignment_mark_obtained: 90,
                     module_score: 88,
                     module_result: "Pass",
@@ -2441,8 +2491,8 @@
                     quiz_attempt: 2,
                     quiz_completed: "Yes",
                     quiz_mark_obtained: 100,
-                    assignment_available: "Yes",
-                    assignment_completed: "Yes",
+                    assignment_availble: "Yes",
+                    assignment_submitted: "Yes",
                     assignment_mark_obtained: 95,
                     module_score: 98,
                     module_result: "Pass",
@@ -2459,8 +2509,8 @@
                     quiz_attempt: 1,
                     quiz_completed: "No",
                     quiz_mark_obtained: 60,
-                    assignment_available: "Yes",
-                    assignment_completed: "No",
+                    assignment_availble: "Yes",
+                    assignment_submitted: "No",
                     assignment_mark_obtained: 0,
                     module_score: 30,
                     module_result: "Fail",
@@ -2571,10 +2621,12 @@
             document.getElementById("pageDesc").innerText = pageTitles[pageId][1];
 
             // Specific page initializations
-            if (pageId === 'dashboardPage') {
+            if (pageId === 'dashboardPage')
+             {
                 renderDashboardCharts();
                 updateDashboardCounters();
-            } else if (pageId === 'reportsPage') {
+            } else if (pageId === 'reportsPage') 
+            {
                 renderCollegeWiseChart();
             }
 
@@ -2582,12 +2634,14 @@
             document.getElementById("sidebar").classList.remove("active");
         }
 
-        function toggleSidebar() {
+        function toggleSidebar() 
+        {
             document.getElementById("sidebar").classList.toggle("active");
         }
 
         // RENDER DATA SYSTEMS
-        function renderAllData() {
+        function renderAllData()
+         {
             updateDashboardCounters();
             renderDashboardCharts();
             renderTrackingTable();
@@ -2596,7 +2650,8 @@
         }
 
         // Dashboard Counters
-        function updateDashboardCounters() {
+        function updateDashboardCounters() 
+        {
             if (document.getElementById("statTotalStudents")) {
                 document.getElementById("statTotalStudents").innerText = studentProfilesList.length;
             }
@@ -2955,7 +3010,7 @@
                             <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${track.video_lastwatched || '-'}</td>
                             <td>${track.quiz_completed || 'No'} (Attempts: ${track.quiz_attempt || 0})</td>
                             <td>${track.quiz_mark_obtained !== null ? track.quiz_mark_obtained : 0}</td>
-                            <td>${track.assignment_completed || 'No'}</td>
+                            <td>${track.assignment_submitted || 'No'}</td>
                             <td>${track.assignment_mark_obtained !== null ? track.assignment_mark_obtained : 0}</td>
                             <td style="font-weight:700;">${track.module_score !== null ? track.module_score : 0}</td>
                             <td><span style="font-weight:600; color:${track.module_result === 'Pass' ? '#10b981' : '#f59e0b'}">${track.module_result || 'Pending'}</span></td>
@@ -2989,7 +3044,8 @@
         }
 
         // ASSIGNMENT REVIEW TABLE
-        function renderReviewTable() {
+        function renderReviewTable() 
+        {
             const body = document.getElementById("reviewTableBody");
             body.innerHTML = "";
 
@@ -2997,7 +3053,8 @@
 
             const totalItems = reviewFilteredData.length;
             const totalPages = Math.ceil(totalItems / reviewItemsPerPage) || 1;
-            if (reviewCurrentPage > totalPages) reviewCurrentPage = totalPages;
+            if (reviewCurrentPage > totalPages) 
+                reviewCurrentPage = totalPages;
 
             const startIndex = (reviewCurrentPage - 1) * reviewItemsPerPage;
             const endIndex = Math.min(startIndex + reviewItemsPerPage, totalItems);
@@ -3020,26 +3077,28 @@
                         <td style="font-weight: 700;">${item.studentName}</td>
                         <td>${item.course}</td>
                         <td>${item.moduleName}</td>
-                        <td><span style="font-family: monospace; font-size: 12px; background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 4px;">source_code.py</span></td>
-                        <td><a href="${item.github}" target="_blank" style="color: var(--accent-blue); text-decoration: none;"><i class="fa-brands fa-github"></i> View Repo</a></td>
                         <td><span class="badge ${badgeClass}">${item.status}</span></td>
                         <td style="text-align: center;">
-                            <button class="btn-submit" style="width: auto; padding: 6px 12px; font-size: 12px; border-radius: 8px;" onclick="openReviewModal('${item.id}')">
-                                <i class="fa-solid fa-clipboard-check"></i> Review
-                            </button>
+                          <button class="btn-submit"
+                            style="width:auto;padding:6px 12px;font-size:12px;border-radius:8px;"
+                            onclick="openAssignmentReview('${item.id}')">
+                            <i class="fa-solid fa-clipboard-check"></i> Review
+                        </button>
                         </td>
                     </tr>
                 `;
             });
         }
 
-        function changeReviewPage(offset) {
+        function changeReviewPage(offset) 
+        {
             reviewCurrentPage += offset;
             renderReviewTable();
         }
 
         // TIMELINE RENDERER
-        function renderTimeline() {
+        function renderTimeline()
+         {
             const list = document.getElementById("timelineList");
             list.innerHTML = "";
 
@@ -3091,16 +3150,19 @@
         }
 
         // MODAL OPENERS & CLOSERS
-        function openModal(modalId) {
+        function openModal(modalId) 
+        {
             document.getElementById(modalId).classList.add("show");
         }
 
-        function closeModal(modalId) {
+        function closeModal(modalId) 
+        {
             document.getElementById(modalId).classList.remove("show");
         }
 
         // VIEW PROGRESS MODAL
-        function openProgressModal(regNo, courseName) {
+        function openProgressModal(regNo, courseName) 
+        {
             const student = studentsData.find(s => s.reg_no === regNo && s.course_name === courseName);
             if (!student) return;
 
@@ -3135,7 +3197,7 @@
 
                 // Assignment completed
                 totalPossible += 1;
-                if (t.assignment_completed === 'Yes') totalCompleted += 1;
+                if (t.assignment_submitted === 'Yes') totalCompleted += 1;
                 if (t.assignment_mark_obtained !== null) {
                     totalAssignScores += t.assignment_mark_obtained;
                     assignCount += 1;
@@ -3174,10 +3236,12 @@
             openModal("viewProgressModal");
         }
 
-        async function updateStudentStatusFromModal() {
+        async function updateStudentStatusFromModal() 
+        {
             const newStatus = document.getElementById("progressCourseStatus").value;
             const student = studentsData.find(s => s.reg_no === currentProgressStudentId && s.course_name === currentProgressCourseName);
-            if (student) {
+            if (student) 
+            {
                 student.student_status = newStatus;
                 
                 try {
@@ -3197,8 +3261,10 @@
                             .update({ student_status: newStatus })
                             .eq("reg_no", currentProgressStudentId)
                             .eq("course_name", currentProgressCourseName);
-                    } catch(errTrack) {
-                        console.warn("Could not update tracking status:", errTrack);
+                    } 
+                    catch(errTrack) 
+                    {
+                    console.warn("Could not update tracking status:", errTrack);
                     }
                     
                     // Add timeline activity
@@ -3208,7 +3274,9 @@
                     await syncDatabaseState();
                     renderAllData();
                     showToast("Course status updated successfully.", "success");
-                } catch(err) {
+                } 
+                catch(err) 
+                {
                     console.error("Failed to update status in Supabase:", err);
                     showToast("Failed to update status in database: " + (err.message || err), "error");
                 }
@@ -3216,7 +3284,8 @@
         }
 
         // REVIEW ASSIGNMENT MODAL
-        function openReviewModal(subId) {
+        function openReviewModal(subId)
+         {
             const sub = assignmentReviews.find(a => a.id === subId);
             if (!sub) return;
 
@@ -3231,43 +3300,134 @@
             openModal("reviewAssignmentModal");
         }
 
-        function submitAssignmentDecision(status) {
-            const subIndex = assignmentReviews.findIndex(a => a.id === currentReviewStudentId);
-            if (subIndex === -1) return;
-
+        async function submitAssignmentDecision(status)
+         {
+            const subIndex = assignmentReviews.findIndex(a => a.id === selectedTrackingId);
+            let module_score=0;
+            if (subIndex === -1) 
+                return;
+            const assignment = assignmentReviews[subIndex];
             const score = parseInt(document.getElementById("reviewScore").value);
             const feedback = document.getElementById("reviewFeedback").value;
 
+            
             assignmentReviews[subIndex].status = status;
             assignmentReviews[subIndex].score = score;
             assignmentReviews[subIndex].feedback = feedback;
 
             // Reflect on student stats
             const student = studentsData.find(s => s.reg_no === assignmentReviews[subIndex].studentId);
-            if (student) {
+            if (student)
+             {
+                
                 // Find matching tracking record
-                const track = courseTrackingData.find(t => t.reg_no === student.reg_no && t.course_name === student.course_name);
-                if (track) {
-                    track.assignment_completed = status === 'Approved' ? 'Yes' : 'No';
-                    track.assignment_mark_obtained = score;
-                    track.module_score = Math.round(((track.quiz_mark_obtained || 0) + score) / 2);
-                    track.module_result = track.module_score >= 50 ? 'Pass' : 'Fail';
+               const track = courseTrackingData.find(t => t.reg_no === assignment.studentId &&  t.course_name === assignment.course &&  t.module_name === assignment.moduleName);
+                if (track)
+                 {
+                    if(status === "Approved")
+                    {
+                        if(score === 0 || score === null)
+                        {
+                            showToast(`Select the score.`);
+                            return;
+                        }
+                        track.assignment_validated=true;
+                        track.assignment_mark_obtained = score;
+                        module_score= parseFloat((track.module_score || "0%").replace("%", ""));
+                        module_score=module_score+score;
+                        track.module_score = module_score.toFixed(0) + "%";
+                        if(track.quiz_availble)
+                        {
+                            if(track.quiz_completed)//Quiz completed
+                            {   
+                                 const result = module_score >= 60 ? "PASS" : "FAIL";
+                                if(result == "PASS")
+                                {
+                                    certificateModNo ="NGL-M" + new Date().getFullYear() + "-" + String(Date.now()).slice(-5);
+                                    track.module_certificate_issued=true;
+                                    track.module_certificate_no=certificateModNo;
+                                    track.module_certificate_date=new Date().toISOString();
+                                    track.module_result = "PASS";
+                                }
+                                else
+                                {
+                                    track.module_result = "FAIL";
+                                }
+                            }
+                            else//not quiz completed
+                            {
+                                 track.module_result = "Processing";
+                            }
+                        }
+                        else
+                        {
+                            certificateModNo ="NGL-M" + new Date().getFullYear() + "-" + String(Date.now()).slice(-5);
+                            track.module_certificate_issued=true;
+                            track.module_certificate_no=certificateModNo;
+                            track.module_certificate_date=new Date().toISOString();
+                            track.module_result = "PASS";
+                        }
+                    }
+                    else //Rejected
+                    {
+                        track.assignment_validated=false;
+                        track.assignment_mark_obtained = 0;
+                        track.module_result="Processing";
+                        track.assignment_submitted=true;
+                        track.assignment_url="";
+                    }
                     
                     // Update studentcoursetracking in Supabase
-                    dbClient.from("studentcoursetracking")
-                        .update({
-                            assignment_completed: track.assignment_completed,
-                            assignment_mark_obtained: track.assignment_mark_obtained,
-                            module_score: track.module_score,
-                            module_result: track.module_result
-                        })
-                        .eq("reg_no", student.reg_no)
-                        .eq("course_name", student.course_name)
-                        .then(({ error }) => {
-                            if (error) console.error("Could not update studentcoursetracking:", error);
-                        });
+                const { error: updateError } = await dbClient
+                    .from("studentcoursetracking")
+                    .update(track)
+                    .eq("reg_no", assignment.studentId)
+                    .eq("course_name", assignment.course)
+                    .eq("module_name", assignment.moduleName);
+
+                if (updateError)
+                {
+                    console.error("Could not update studentcoursetracking:", updateError);
+                    return;
+                }
                 }
             }
+
+            const { data: allModules } =await dbClient.from("studentcoursetracking").select("*").eq("reg_no", assignment.studentId).eq("course_name", assignment.course);
+            const courseCompleted =  allModules && allModules.length > 0 && allModules.every(
+                m =>
+                    m.module_result === "PASS" ||
+                    m.module_result === "FAIL"
+            );
+
+            if (courseCompleted)
+            {
+                const totalScore = allModules.reduce((sum, m) => sum + parseFloat((m.module_score || "0").replace("%", "") ), 0);
+                const averageScoreNum=(totalScore / allModules.length).toFixed(2);
+                let overallResult=null;
+                if(averageScoreNum >=60)
+                overallResult="PASS";
+                else
+                overallResult="FAIL";
+                const averageScore = ( totalScore / allModules.length).toFixed(2) + "%";
+
+                const certificateNo ="NGL-C" + new Date().getFullYear() + "-" + String(Date.now()).slice(-6);
+        
+                 await dbClient.from("studentenrollment")
+                .update({
+                    student_status: "Completed",
+                    course_completed:true,
+                    mark_obtained:averageScore.toString(),
+                    overall_result:overallResult,
+                    cerificate_issued:true,
+                    certificate_no:certificateNo,
+                    certificate_date:new Date().toISOString()
+
+                })
+                .eq("reg_no", assignment.studentId)
+                .eq("course_name", assignment.course);
+            }
+
 
             // Log activity
             addActivityLog('assignment', 'Assignment Reviewed', `Assignment from ${assignmentReviews[subIndex].studentName} reviewed and ${status} (Score: ${score}).`);
@@ -3866,6 +4026,53 @@
                 window.location.href = "login.html";
             }
         }
+
+async function openAssignmentReview(id)
+{
+    
+    const row = assignmentReviews.find(x => x.id === id);
+
+    if (!row)
+    {
+        alert("Assignment not found.");
+        return;
+    }
+
+    selectedTrackingId = row.id;
+
+    document.getElementById("reviewModalTitle").innerHTML =
+        "Review Submission : " + row.studentName;
+
+    document.getElementById("pdfViewer").src = row.assignmentUrl;
+
+    document.getElementById("downloadAssignment").href =
+        row.assignmentUrl;
+
+    document.getElementById("reviewScore").value =
+        row.score ? row.score.replace("%","") : 0;
+
+    document.getElementById("reviewScoreVal").innerHTML =
+        document.getElementById("reviewScore").value;
+
+    document.getElementById("reviewFeedback").value =
+        row.feedback || "";
+
+        const approveBtn = document.getElementById("approveBtn");
+    const rejectBtn = document.getElementById("rejectBtn");
+
+    if (row.assignment_validated || row.status === "Approved")
+    {
+        approveBtn.disabled = true;
+        rejectBtn.disabled = true;
+    }
+    else
+    {
+        approveBtn.disabled = false;
+        rejectBtn.disabled = false;
+    }
+
+    openModal("reviewAssignmentModal");
+}
     </script>
 </body>
 

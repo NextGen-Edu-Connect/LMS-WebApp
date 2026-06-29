@@ -216,38 +216,26 @@ body{
 
     <h2 id="question">
         Loading...
-
     </h2>
     <div id="options">
-
     </div>
 
     <div class="submit-wrap">
 
         <button id="submitBtn">
-
             Submit Quiz
-
         </button>
 
     </div>
 
-    <div id="successMsg"
-         class="result success">
-
+    <div id="successMsg" class="result success">
         🎉 Quiz Passed
-
     </div>
 
-    <div id="failMsg"
-         class="result fail">
-
+    <div id="failMsg" class="result fail">
         ❌ Wrong Answer
-
     </div>
-
 </div>
-
 <script>
 
 const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
@@ -316,9 +304,15 @@ function selectOption(element,questionId,answer)
 
 document.getElementById( "submitBtn").onclick =async function()
 {
-    
     const {data:tracking }  = await client.from("studentcoursetracking").select("*").eq("reg_no", studentRegno )
         .eq("course_name", courseName).eq("module_name", moduleName).single();
+     let certificateModNo ="";
+   
+    const assignmentAvailable=tracking.assignment_availble;
+    const assignmentSubmitted=tracking.assignment_submitted;
+    const assignmentValidate=tracking.assignment_validated;
+    const assignmentMark = parseFloat((tracking.assignment_mark_obtained || "0%").replace("%", ""));
+
 
     let attempt =tracking?.quiz_attempt || 0;
 
@@ -365,13 +359,36 @@ document.getElementById( "submitBtn").onclick =async function()
     if(result === "PASS")
     {
         updateData.quiz_completed = true;
-        updateData.module_result = "PASS";
-        const moduleScore = 70 + (percent * 0.30);
-        updateData.module_score = moduleScore.toFixed(0) + "%";
-        const certificateModNo ="NGL-M" + new Date().getFullYear() + "-" + String(Date.now()).slice(-5);
-        updateData.module_certificate_issued=true;
-        updateData.module_certificate_no=certificateModNo;
-        updateData.module_certificate_date=new Date().toISOString();
+        if(assignmentAvailable)
+        {
+            if(assignmentValidate)
+            {
+                updateData.module_result = "PASS";
+                const moduleScore = 50 + (percent * 0.30)+assignmentMark;
+                updateData.module_score = moduleScore.toFixed(0) + "%";
+                certificateModNo ="NGL-M" + new Date().getFullYear() + "-" + String(Date.now()).slice(-5);
+                updateData.module_certificate_issued=true;
+                updateData.module_certificate_no=certificateModNo;
+                updateData.module_certificate_date=new Date().toISOString();
+            }
+            else
+            {
+                updateData.module_result = "Processing";
+                const moduleScore = 50 + (percent * 0.30);
+                updateData.module_score = moduleScore.toFixed(0) + "%";
+            }
+        }
+        else
+        {
+            updateData.module_result = "PASS";
+            const moduleScore = 70 + (percent * 0.30);
+            updateData.module_score = moduleScore.toFixed(0) + "%";
+            certificateModNo ="NGL-M" + new Date().getFullYear() + "-" + String(Date.now()).slice(-5);
+            updateData.module_certificate_issued=true;
+            updateData.module_certificate_no=certificateModNo;
+            updateData.module_certificate_date=new Date().toISOString();
+        }
+       
     }
     else
     {
@@ -379,10 +396,30 @@ document.getElementById( "submitBtn").onclick =async function()
         if(attempt >= 3)
         {
             updateData.quiz_completed = true;
-            const moduleScore = 70 + (percent * 0.30);
-            updateData.module_score = moduleScore.toFixed(0) + "%";
-            updateData.module_result ="FAIL";
-            updateData.module_certificate_issued=false;
+            if(assignmentAvailable)
+            {
+                if(assignmentValidate)
+                {
+                    const moduleScore = 50 + (percent * 0.30)+assignmentMark;
+                    updateData.module_score = moduleScore.toFixed(0) + "%";
+                    updateData.module_result ="FAIL";
+                    updateData.module_certificate_issued=false;
+                }
+                else
+                {
+                    const moduleScore = 50 + (percent * 0.30);
+                    updateData.module_score = moduleScore.toFixed(0) + "%";
+                    updateData.module_result ="Processing";
+                    updateData.module_certificate_issued=false;
+                }
+            }
+            else
+            {
+                const moduleScore = 70 + (percent * 0.30);
+                updateData.module_score = moduleScore.toFixed(0) + "%";
+                updateData.module_result ="FAIL";
+                updateData.module_certificate_issued=false;
+            }
         }
         else
         {
@@ -394,47 +431,80 @@ document.getElementById( "submitBtn").onclick =async function()
     await client.from("studentcoursetracking").update(updateData).eq("reg_no",studentRegno).eq("course_name",courseName).eq("module_name",moduleName);
     if(result === "PASS")
     {
-        successMsg.innerHTML =
+        if(updateData.module_result==="Processing" && assignmentAvailable)
+        {
+            successMsg.innerHTML =
         `
         🎉 Passed
         <br><br>
         Score : ${percent}%
         <br><br>
         Attempt : ${attempt}/3
-        `;
+        <br><br>
 
-        successMsg.style.display =
-        "block";
+        <button
+            onclick="
+                location.href='modulePage.html?id=${moduleId}&course=${courseId}'
+            "
+            style="
+                border:none;
+                padding:12px 24px;
+                border-radius:12px;
+                cursor:pointer;
+                font-weight:600;
+                margin-top:10px;
+            ">
+           Continue Assignment
+        </button>
+        `;
+        successMsg.style.display = "block";
+        }
+        else
+        {
+             successMsg.innerHTML =
+        `
+        🎉 Passed
+        <br><br>
+        Score : ${percent}%
+        <br><br>
+        Attempt : ${attempt}/3
+        
+        `;
+        successMsg.style.display = "block";
+
+        }
+       
     }
     else
     {
+       
         failMsg.innerHTML =
-`
-❌ Failed
-<br><br>
-Score : ${percent}%
-<br><br>
-Attempt : ${attempt}/3
-<br><br>
+        `
+        ❌ Failed
+        <br><br>
+        Score : ${percent}%
+        <br><br>
+        Attempt : ${attempt}/3
+        <br><br>
 
-<button
-    onclick="
-        location.href='modulePage.html?id=${moduleId}&course=${courseId}'
-    "
-    style="
-        border:none;
-        padding:12px 24px;
-        border-radius:12px;
-        cursor:pointer;
-        font-weight:600;
-        margin-top:10px;
-    ">
-    ▶ Watch Video Again
-</button>
-`;
+        <button
+            onclick="
+                location.href='modulePage.html?id=${moduleId}&course=${courseId}'
+            "
+            style="
+                border:none;
+                padding:12px 24px;
+                border-radius:12px;
+                cursor:pointer;
+                font-weight:600;
+                margin-top:10px;
+            ">
+            ▶ Watch Video Again
+        </button>
+        `;
 
-        failMsg.style.display =
-        "block";
+      
+        failMsg.style.display = "block";
     }
 
     const { data: allModules } =await client.from("studentcoursetracking").select("*").eq("reg_no", studentRegno).eq("course_name", courseName);

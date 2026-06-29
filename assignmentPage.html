@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Assignment</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Poppins,sans-serif;
+}
+
+body{
+
+    min-height:100vh;
+    padding:35px;
+
+    background:
+    linear-gradient(
+        135deg,
+        #020617,
+        #0f172a,
+        #172554,
+        #1d4ed8
+    );
+
+    display:flex;
+    justify-content:center;
+    align-items:center;
+
+    color:white;
+}
+
+.assignment-card{
+
+    width:100%;
+    max-width:900px;
+
+    background:rgba(255,255,255,.08);
+
+    backdrop-filter:blur(18px);
+
+    border:1px solid rgba(255,255,255,.08);
+
+    border-radius:34px;
+
+    padding:40px;
+}
+
+.assignment-title{
+
+    font-size:34px;
+    text-align:center;
+    margin-bottom:30px;
+}
+
+label{
+
+    display:block;
+    margin-bottom:10px;
+    font-size:18px;
+    font-weight:600;
+}
+
+textarea{
+
+    width:100%;
+    height:260px;
+
+    padding:18px;
+
+    border:none;
+
+    border-radius:20px;
+
+    resize:none;
+
+    font-size:16px;
+
+    outline:none;
+
+    color:white;
+
+    background:
+        rgba(255,255,255,.08);
+}
+
+textarea::placeholder{
+    color:#cbd5e1;
+}
+
+.upload-box{
+
+    margin-top:25px;
+}
+
+input[type=file]{
+
+    width:100%;
+
+    padding:15px;
+
+    border-radius:15px;
+
+    color:white;
+
+    background:
+        rgba(255,255,255,.08);
+}
+
+.submit-wrap{
+
+    text-align:center;
+
+    margin-top:35px;
+}
+
+button{
+
+    border:none;
+
+    padding:18px 38px;
+
+    border-radius:18px;
+
+    font-size:18px;
+
+    font-weight:600;
+
+    cursor:pointer;
+
+    color:white;
+
+    background:
+        linear-gradient(
+            135deg,
+            #06b6d4,
+            #2563eb
+        );
+
+    transition:.3s;
+}
+
+button:hover{
+
+    transform:translateY(-3px);
+}
+
+#status{
+
+    display:none;
+
+    margin-top:25px;
+
+    padding:18px;
+
+    border-radius:15px;
+
+    text-align:center;
+
+    background:
+        linear-gradient(
+            135deg,
+            #16a34a,
+            #22c55e
+        );
+}
+
+.back{
+
+    margin-bottom:25px;
+
+    cursor:pointer;
+
+    display:inline-block;
+
+    padding:10px 20px;
+
+    border-radius:15px;
+
+    background:
+        rgba(255,255,255,.08);
+}
+
+.back:hover{
+
+    background:
+        rgba(255,255,255,.15);
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="assignment-card">
+<div class="back"
+onclick="
+location.href='modulePage.html?id='+new URLSearchParams(location.search).get('module')+'&course='+new URLSearchParams(location.search).get('course');">
+← Back
+</div>
+
+<div class="assignment-title">
+📄 Module Assignment
+</div>
+
+<label>
+Assignment
+</label>
+
+<textarea
+id="assignmentText"
+readonly
+placeholder="Loading assignment...">
+</textarea>
+
+<div class="upload-box">
+
+<label>
+Upload Assignment
+</label>
+
+<input
+type="file"
+id="assignmentFile"
+accept=".pdf,.doc,.docx">
+
+</div>
+
+<div class="submit-wrap">
+
+<button id="submitBtn">
+Submit Assignment
+</button>
+
+</div>
+
+<div id="status">
+✅ Assignment Submitted Successfully
+</div>
+
+</div>
+
+<script>
+
+const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
+const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
+const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
+
+const params = new URLSearchParams(window.location.search);
+
+const moduleId = params.get("module");
+const courseId = params.get("course");
+const assignmentId=params.get("assignment");
+const moduleName = decodeURIComponent(params.get("moduleName"));
+const courseName = decodeURIComponent(params.get("courseName"));
+
+const studentRegno = localStorage.getItem("user");
+
+const assignmentText = document.getElementById("assignmentText");
+const assignmentFile = document.getElementById("assignmentFile");
+const submitBtn = document.getElementById("submitBtn");
+const status = document.getElementById("status");
+
+loadAssignment();
+
+async function loadAssignment()
+{
+    /* Load Assignment */
+
+    const { data, error } = await client
+        .from("assignments")
+        .select("*")
+        .eq("assignment_id", assignmentId)
+        .single();
+
+    if(error)
+    {
+        console.log(error);
+        assignmentText.value = "Assignment not found.";
+        submitBtn.disabled = true;
+        return;
+    }
+
+    assignmentText.value = data.assignment_work;
+
+    /* Check Previous Submission */
+
+    const { data:tracking } = await client
+        .from("studentcoursetracking")
+        .select("assignment_submitted,assignment_url")
+        .eq("reg_no",studentRegno)
+        .eq("course_name",courseName)
+        .eq("module_name",moduleName)
+        .single();
+
+    if (tracking && tracking.assignment_submitted)
+    {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "🔄 Re-upload Assignment";
+
+        assignmentFile.disabled = false;
+
+        status.style.display = "block";
+        status.innerHTML = "✅ Assignment already submitted. You may upload a new version.";
+    }
+    else
+    {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = "📤 Submit Assignment";
+    }
+}
+
+/* Submit Assignment */
+
+submitBtn.onclick = async function()
+{
+    const isReUpload =submitBtn.innerHTML === "🔄 Re-upload Assignment";
+    const file = assignmentFile.files[0];
+
+    if(!file)
+    {
+        alert("Please choose an assignment file.");
+        return;
+    }
+
+    /* Allow only PDF, DOC, DOCX */
+
+    const allowed =
+    [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ];
+
+    if(!allowed.includes(file.type))
+    {
+        alert("Only PDF, DOC and DOCX files are allowed.");
+        return;
+    }
+
+    const fileName =
+        studentRegno +
+        "_" +
+        moduleId +
+        "_" +
+        Date.now() +
+        "_" +
+        file.name;
+
+
+        if (isReUpload)
+{
+    const { data: oldTracking } = await client
+        .from("studentcoursetracking")
+        .select("assignment_url")
+        .eq("reg_no", studentRegno)
+        .eq("course_name", courseName)
+        .eq("module_name", moduleName)
+        .single();
+
+    if (oldTracking && oldTracking.assignment_url)
+    {
+        // Extract file name from public URL
+        const filePath = decodeURIComponent(
+            oldTracking.assignment_url.split("/").pop()
+        );
+
+        const { error: deleteError } = await client
+            .storage
+            .from("assignments")
+            .remove([filePath]);
+
+        if (deleteError)
+        {
+            console.log("Old file delete failed:", deleteError.message);
+        }
+    }
+}
+
+    /* Upload File */
+
+    const { error:uploadError } = await client
+        .storage
+        .from("assignments")
+        .upload(fileName,file);
+
+    if(uploadError)
+    {
+        alert(uploadError.message);
+        return;
+    }
+
+    /* Get Public URL */
+
+    const { data:urlData } = client
+        .storage
+        .from("assignments")
+        .getPublicUrl(fileName);
+
+    const assignmentUrl = urlData.publicUrl;
+
+    /* Update Tracking */
+
+    const { error:updateError } = await client
+        .from("studentcoursetracking")
+        .update({
+
+            assignment_submitted:true,
+            assignment_url:assignmentUrl
+
+        })
+        .eq("reg_no",studentRegno)
+        .eq("course_name",courseName)
+        .eq("module_name",moduleName);
+
+    if(updateError)
+    {
+        alert(updateError.message);
+        return;
+    }
+
+    if (isReUpload)
+{
+    alert("Assignment Re-uploaded Successfully");
+    status.innerHTML = "✅ Assignment Re-uploaded Successfully";
+}
+else
+{
+    alert("Assignment Submitted Successfully");
+    status.innerHTML = "✅ Assignment Submitted Successfully";
+}
+
+status.style.display = "block";
+
+submitBtn.innerHTML = "🔄 Re-upload Assignment";
+assignmentFile.value = "";
+
+};
+
+
+
+</script>
+
+</body>
+</html>

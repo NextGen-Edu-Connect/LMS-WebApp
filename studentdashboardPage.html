@@ -822,7 +822,8 @@
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'themeChange') {
             document.documentElement.setAttribute('data-theme', event.data.theme);
-            if (moduleChartInstance) {
+            if (moduleChartInstance) 
+            {
                 moduleChartInstance.updateOptions({
                     theme: { mode: event.data.theme }
                 });
@@ -887,17 +888,20 @@
       }
     }
 
-    function setWelcome(message) {
+    function setWelcome(message) 
+    {
       document.getElementById("welcomeText").textContent = message;
     }
 
-    function showError(message) {
+    function showError(message)
+     {
       const errorBox = document.getElementById("errorBox");
       errorBox.textContent = message;
       errorBox.classList.remove("hidden");
     }
 
-    async function fetchStudentProfile(loginUser) {
+    async function fetchStudentProfile(loginUser) 
+    {
   let { data, error } = await client
     .from("studentprofile")
     .select("*")
@@ -1050,17 +1054,43 @@
       };
     }
 
-    function calculateCourseMetrics(trackingRows, enrollment) {
+    function calculateCourseMetrics(trackingRows, enrollment)
+     {
       const totalModules = trackingRows.length;
 
       // Only use columns that actually exist in studentcoursetracking schema:
       // video_completed, quiz_completed, module_certificate_issued
-      const completedModules = trackingRows.filter(row => {
-        const videoCompleted = toBool(row.video_completed);
-        const quizCompleted  = toBool(row.quiz_completed);
-        const certified      = toBool(row.module_certificate_issued);
-        // A module counts as done when video is watched and quiz is passed, or cert issued
-        return (videoCompleted && quizCompleted) || certified;
+      const completedModules = trackingRows.filter(row =>
+      {
+          const videoCompleted = toBool(row.video_completed);
+          const quizAvailable = toBool(row.quiz_availble);
+          const quizCompleted = toBool(row.quiz_completed);
+          const assignmentAvailable = toBool(row.assignment_availble);
+          const assignmentValidated = toBool(row.assignment_validated);
+          const certified = toBool(row.module_certificate_issued);
+
+          // Certificate overrides everything
+          if (certified)
+              return true;
+
+          // Video is mandatory for every module
+          if (!videoCompleted)
+              return false;
+
+          // Video + Quiz + Assignment
+          if (quizAvailable && assignmentAvailable)
+              return quizCompleted && assignmentValidated;
+
+          // Video + Quiz
+          if (quizAvailable)
+              return quizCompleted;
+
+          // Video + Assignment
+          if (assignmentAvailable)
+              return assignmentValidated;
+
+          // Video only (shouldn't normally happen)
+          return true;
       }).length;
 
       let progress = 0;
@@ -1114,14 +1144,16 @@
       ];
     }
 
-    function renderStats(data) {
+    function renderStats(data) 
+    {
       document.getElementById("activeCoursesCount").textContent = data.stats.activeCoursesCount;
       document.getElementById("averageProgressValue").textContent = data.stats.averageProgress + "%";
       document.getElementById("certificatesCount").textContent = data.stats.certificatesCount;
       document.getElementById("modulesCompletedValue").textContent = data.stats.totalCompletedModules;
     }
 
-    function renderCourses(courses) {
+    function renderCourses(courses) 
+    {
       const grid = document.getElementById("coursesGrid");
       const emptyBox = document.getElementById("emptyCourses");
 

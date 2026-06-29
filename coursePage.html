@@ -294,23 +294,52 @@ async function loadCourse()
 
     /* STUDENT TRACKING */
     ViewStartButton(studentRegno,courseName);
-   // const studentRegno = localStorage.getItem("studentRegno" );
-    
+   // const studentRegno = localStorage.getItem("studentRegno" );  
     const {data:tracking}= await client.from("studentcoursetracking").select("*").eq("reg_no",studentRegno).eq("course_name",course.course_name);
 
     /* MAP */
 
-    const completedMap ={};
-    tracking.forEach(
-        t =>
+    const completedMap = {};
+
+    tracking.forEach(t =>
     {
-        if(
-            t.quiz_completed
-        )
+        const videoCompleted = !!t.video_completed;
+        const quizAvailable = !!t.quiz_availble;
+        const assignmentAvailable = !!t.assignment_availble;
+        const quizCompleted = !!t.quiz_completed;
+        const assignmentValidated = !!t.assignment_validated;
+
+        let completed = false;
+
+        // Video is mandatory
+        if (!videoCompleted)
         {
-            completedMap[
-                t.module_name
-            ] = true;
+            completed = false;
+        }
+        // Video + Quiz + Assignment
+        else if (quizAvailable && assignmentAvailable)
+        {
+            completed = quizCompleted && assignmentValidated;
+        }
+        // Video + Quiz
+        else if (quizAvailable)
+        {
+            completed = quizCompleted;
+        }
+        // Video + Assignment
+        else if (assignmentAvailable)
+        {
+            completed = assignmentValidated;
+        }
+        // Video only (fallback)
+        else
+        {
+            completed = true;
+        }
+
+        if (completed)
+        {
+            completedMap[t.module_name] = true;
         }
     });
 
@@ -321,11 +350,7 @@ async function loadCourse()
     modules.forEach(
         m =>
     {
-        if(
-            completedMap[
-                m.module_name
-            ]
-        )
+        if(completedMap[m.module_name])
         {
             completedCount++;
         }
@@ -335,18 +360,12 @@ async function loadCourse()
 
     /* BANNER */
 
-    document
-    .getElementById(
-        "courseBanner"
-    ).innerHTML =
+    document.getElementById("courseBanner").innerHTML =
 
     `
-
     <img src="${course.thumbnail}"
          class="banner-img">
-
     <div class="banner-content">
-
         <h1>
             ${course.course_name}
         </h1>
@@ -354,7 +373,6 @@ async function loadCourse()
         <p>
             ${course.description}
         </p>
-
         <div class="progress-box">
 
             <div class="progress-bar">
@@ -367,9 +385,7 @@ async function loadCourse()
             </div>
 
             <div style="margin-top:10px">
-
                 ${percent}% Completed
-
             </div>
 
         </div>
@@ -382,86 +398,67 @@ async function loadCourse()
 
     let html = "";
 
-    modules.forEach(
-        (m,index)=>
+    modules.forEach((m,index)=>
     {
-       const moduleTracking =
-    tracking.find(
-        t => t.module_name === m.module_name
-    );
+       const moduleTracking = tracking.find(t => t.module_name === m.module_name );
 
-const moduleResult = moduleTracking?.module_result || "";
-const completed = moduleResult === "PASS";
-const disabled =    moduleResult === "PASS" ||  moduleResult === "FAIL";
-let locked = true;
-const courseStarted =   tracking &&  tracking.length > 0;
-
-if (!courseStarted)
-{
-    locked = true;
-}
-else if (disabled)
-{
-    locked = true;
-}
-else if (index === 0)
-{
-    locked = false;
-}
-else
-{
-    const prev = modules[index - 1];
-    locked =
-        !completedMap[
-            prev.module_name
-        ];
-}
-if (!locked && !disabled)
-{
-    activeModuleName = m.module_name;
-
-}
+        const moduleResult = moduleTracking?.module_result || "";
+        const completed = moduleResult === "PASS";
+        const disabled =    moduleResult === "PASS" ||  moduleResult === "FAIL";
+        let locked = true;
+        const courseStarted =   tracking &&  tracking.length > 0;
+        if (!courseStarted)
+        {
+            locked = true;
+        }
+        else if (disabled)
+        {
+            locked = true;
+        }
+        else if (index === 0)
+        {
+            locked = false;
+        }
+        else
+        {
+            const prev = modules[index - 1];
+            locked =!completedMap[prev.module_name];
+        }
+        if (!locked && !disabled)
+        {
+            activeModuleName = m.module_name;
+        }
 
         html += `
-
         <div class="module-card
              ${locked?"locked":""}
              ${completed?"completed":""}"
-
-             onclick="
-${(locked || disabled)
-? ''
-: "openModule('" + m.id + "')"}
-"
-
+             onclick="${(locked || disabled)? '': "openModule('" + m.id + "')"}"
             <h3>
-
-                ${moduleResult === "PASS"
-?'✅'
-:moduleResult === "FAIL"
-?'❌'
-:locked
-?'🔒'
-:'▶'}
-
+               ${moduleResult === "PASS"
+                ? '✅'
+                : moduleResult === "FAIL"
+                ? '❌'
+                : moduleResult === "Processing"
+                ? '⏯️'
+                : locked
+                ? '🔒'
+                : '▶'}                 
                 ${m.module_name}
-
             </h3>
-
             <p>
 
-                ${moduleResult === "PASS"
-?"Completed"
-:moduleResult === "FAIL"
-?"Failed"
-:locked
-?"Locked"
-:"Ready to learn"}
-
+               ${moduleResult === "PASS"
+                ? "Completed"
+                : moduleResult === "FAIL"
+                ? "Failed"
+                : moduleResult === "Processing"
+                ? "Continue to Learn"
+                : locked
+                ? "Locked"
+                : "Ready to Learn"}
             </p>
-
         </div>
-
         `;
     });
 
@@ -526,30 +523,69 @@ async function StartCourse()
         {
             return;
         }
-        const trackingRecords = modules.map(m => ({
+        const trackingRecords = [];
+
+for (const m of modules)
+{
+    // Check Quiz Availability
+    let quizAvailable = false;
+
+    if (m.quiz_id)
+    {
+        const { data: quiz } = await client
+            .from("quizzes")
+            .select("id")
+            .eq("quiz_id", m.quiz_id)    
+        quizAvailable = quiz != null;
+    }
+
+    // Check Assignment Availability
+    let assignmentAvailable = false;
+
+    if (m.assignment_id)
+    {
+        const { data: assignment } = await client
+            .from("assignments")
+            .select("id")
+            .eq("assignment_id", m.assignment_id)
+            .maybeSingle();
+
+        assignmentAvailable = assignment != null;
+    }
+
+    trackingRecords.push({
         reg_no: studentRegno,
         student_name: studentName,
         course_name: courseName,
         module_name: m.module_name,
+
         video_completed: false,
-        quiz_availble: false,
+
+        quiz_availble: quizAvailable,
         quiz_attempt: 0,
+        quiz_mark_obtained_attempt1: 0,
+        quiz_mark_obtained_attempt2: 0,
+        quiz_mark_obtained_attempt3: 0,
+        quiz_mark_obtained: 0,
         quiz_completed: false,
-        assignment_availble: false,
-        assignment_completed: false,
+
+        assignment_availble: assignmentAvailable,
+        assignment_submitted: false,
+        assignment_mark_obtained: 0,
+        assignment_validated: false,
+
+        module_certificate_issued: false,
         module_result: "Not Started",
         student_status: "In Progress"
-    }));
+    });
+}
 
     if (trackingRecords.length > 0)
     {
         trackingRecords[0].module_result = "Processing";
         trackingRecords[0].student_status = "In Progress";
     }
-        const { error } = await client
-        .from("studentcoursetracking")
-        .insert(trackingRecords);
-
+        const { error } = await client.from("studentcoursetracking").insert(trackingRecords);
     if (error)
     {
         alert(error.message);

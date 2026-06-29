@@ -1,3 +1,5 @@
+
+
 const SUPABASE_URL ="https://akodraeqesulsofaanna.supabase.co";
 const SUPABASE_KEY ="sb_publishable_q6jaRXcDuGa6qXCU4FZrfA_OObM1r2C";
 const client =supabase.createClient(SUPABASE_URL,SUPABASE_KEY );
@@ -9,7 +11,9 @@ window.onload = function ()
     loadCoursesTable();
     loadVideosTable();
     loadQuizDropdown();
+    loadAssignmentDropdown();
     loadQuizTable();
+    loadAssignmentTable();
     loadCollegeTable();
     loadmailIdDropdown();
     loadCollegeDropdown();
@@ -60,7 +64,6 @@ function togglePassword()
 
 window.selectRole = function (element, role) 
 {
-
     document.querySelectorAll(".role-option").forEach(card => {card.classList.remove("active");});
     element.classList.add("active");
     document.getElementById("role").value = role;
@@ -131,23 +134,78 @@ window.createUser = async function ()
     const username =document.getElementById("newUsername").value;
     const password=document.getElementById("newPassword").value;
     const role =document.getElementById("newRole").value;
+    const mail_id = document.getElementById("newmailId").value
+    const student_name = document.getElementById("studentName").value.trim();
+    const user_name = document.getElementById("studentName").value.trim();
     const user_status ="Registered";
-    if (!username || !password)
+    if (!username || !password || !mail_id)
     {
-    alert("Please enter username and password.");
+    alert("Please enter the credentials.");
         return;
     }
-     if (role === "Student" && !studentName) 
+    if(!mail_id)
+    {
+        alert("Please enter the user mail ID.");
+        return;
+    }
+    if (role === "Student") 
+    {
+        if(!student_name)
         {
-        alert("Please enter the student name.");
-        return;
+            alert("Please enter the student name.");
+            return;
+        }   
+            
     }
+    else if(role === "Tutor")
+    {
+        if(!student_name)
+        {
+            alert("Please enter the tutor name.");
+            return;
+        }   
+    }
+
+     const { data: existingUsers, error: fetchError } =
+            await client
+                .from("login")
+                .select("username, mail_id");
+
+        if (fetchError)
+        {
+            showMessage(fetchError.message);
+            return;
+        }
+
+
+        const existingMailIds =
+            new Set(
+                existingUsers
+                    .filter(x => x.mail_id)
+                    .map(
+                        x =>
+                            x.mail_id
+                                .toLowerCase()
+                                .trim()
+                    )
+            );
+
+            if ( mail_id && existingMailIds.has(mail_id))
+            {
+                alert("Mail Id already Exists.");
+                return;
+                
+            }
+
+
     const { error } = await client.from("login").insert([
                 {
                     username,
                     password,
                     role,
-                    user_status
+                    user_status,
+                    mail_id,
+                    user_name
                 }
             ]);
 
@@ -169,7 +227,7 @@ window.createUser = async function ()
                 {
                     reg_no,
                     student_name,
-                    mail_id: null,
+                    mail_id,
                     phone_no: null,
                     gender: null,
                     department: null,
@@ -193,128 +251,30 @@ window.createUser = async function ()
     document.getElementById("newUsername").value = "";
     document.getElementById("newPassword").value = "";
     document.getElementById("newRole").selectedIndex = 0;
-    alert("User Created Successfully");
+
+      const { data, errorTest} = await client.functions.invoke("send-login-email",
+        {
+            body: {
+                studentName: student_name,
+                email: "me.nextgenlearners@gmail.com",
+                username: username,
+                password: password
+                }
+        }
+    );
+
+        console.log("Data:", data);
+        console.log("Error:", errorTest);
+
+        if (errorTest) 
+        {
+            alert(errorTest.message);
+        } 
+        else 
+        {
+            alert("User created successfully and Email sent.");
+        }
 };
-// window.bulkCreateUsers = async function ()
-// {
-//     const file = document.getElementById("studentFile").files[0];
-//     if (!file)
-//     {
-//         showMessage("Please select an Excel file");
-//         return;
-//     }
-//     try
-//     {
-//         // Read Excel File
-//         const data = await file.arrayBuffer();
-//         const workbook = XLSX.read(data, { type: "array" });
-//         const worksheet =workbook.Sheets[workbook.SheetNames[0]];
-//         const students =XLSX.utils.sheet_to_json(worksheet);
-//         if (students.length === 0)
-//         {
-//             showMessage("Excel file is empty");
-//             return;
-//         }
-
-//         // Get existing Reg Nos
-//         const { data: existingStudents, error: fetchError } = await client.from("studentprofile").select("reg_no");
-//         if (fetchError)
-//         {
-//             showMessage(fetchError.message);
-//             return;
-//         }
-
-//         const existingRegNos = new Set(existingStudents.map(x => x.reg_no));
-
-//         const loginUsers = [];
-//         const studentProfiles = [];
-//         const duplicateRegNos = [];
-//         console.log(existingStudents);
-//         console.log(fetchError);
-//         students.forEach(student =>
-//         {
-//             const reg_no = String(student.reg_no).trim();
-//             if (existingRegNos.has(reg_no))
-//             {
-//                 duplicateRegNos.push(reg_no);
-//                 return;
-//             }
-
-//             loginUsers.push({
-//                 username: reg_no,
-//                 password: String(student.DOB || ""),
-//                 role: "Student",
-//                 user_status: "Registered"
-//             });
-
-//             studentProfiles.push({
-//                 reg_no: reg_no,
-//                 student_name: student.student_name || null,
-//                 mail_id: student.mail_id || null,
-//                 phone_no: student.phone_no || null,
-//                 gender: student.gender || null,
-//                 department: student.department || null,
-//                 college_name: student.college_name || null,
-//                 college_code: student.college_code || null,
-//                 district: student.district || null,
-//                 university: student.university || null,
-//                 student_status: student.student_status || "Registered"
-//             });
-//         });
-
-//         // Nothing to insert
-//         if (studentProfiles.length === 0)
-//         {
-//             showMessage("All uploaded students already exist.");
-//             return;
-//         }
-
-//         // Insert Login Records
-//         const { error: loginError } =await client.from("login").insert(loginUsers);
-//         if (loginError)
-//         {
-//             showMessage(loginError.message);
-//             return;
-//         }
-
-//         // Insert Student Profiles
-//         const { error: profileError } = await client.from("studentprofile").insert(studentProfiles);
-
-//         if (profileError)
-//         {
-//             if (profileError.message.includes("studentenrollment_mail_id_key"))
-//             {
-//                 showMessage("Duplicate Mail ID already exists");
-//             }
-//             else
-//             {
-//                 showMessage(error.message);
-//             }
-//             await client.from("login").delete().in("username", loginUsers.map(x => x.username));
-//             return;
-//         }
-
-//         document.getElementById("bulkSummaryCard").style.display = "block";
-//         document.getElementById("totalCount").innerText = students.length;
-//         document.getElementById("uploadedCount").innerText = studentProfiles.length;
-//         document.getElementById("duplicateCount").innerText = duplicateRegNos.length;
-//         document.getElementById("failedCount").innerText = 0;
-
-//         if (duplicateRegNos.length > 0)
-//         {
-//             document.getElementById("duplicateRegs").innerText = duplicateRegNos.join(", ");
-//         }
-//         else
-//         {
-//             document.getElementById("duplicateRegs").innerText ="No duplicate register numbers found";
-//         }
-
-//     }
-//     catch (err)
-//     {
-//         showMessage(err.message);
-//     }
-// };
 
 window.bulkCreateUsers = async function ()
 {
@@ -369,6 +329,8 @@ window.bulkCreateUsers = async function ()
                     )
             );
 
+            
+
         const loginUsers = [];
         const studentProfiles = [];
         const uploadReport = [];
@@ -412,7 +374,8 @@ window.bulkCreateUsers = async function ()
                 username: reg_no,
                 password: String(student.DOB || ""),
                 role: "Student",
-                user_status: "Registered"
+                user_status: "Registered",
+                mail_id:mail_id
             });
 
             studentProfiles.push({
@@ -447,10 +410,7 @@ window.bulkCreateUsers = async function ()
 
         if (studentProfiles.length > 0)
         {
-            const { error: loginError } =
-                await client
-                    .from("login")
-                    .insert(loginUsers);
+            const { error: loginError } = await client.from("login").insert(loginUsers);
 
             if (loginError)
             {
@@ -458,75 +418,35 @@ window.bulkCreateUsers = async function ()
                 return;
             }
 
-            const { error: profileError } =
-                await client
-                    .from("studentprofile")
-                    .insert(studentProfiles);
+            const { error: profileError } = await client.from("studentprofile").insert(studentProfiles);
 
             if (profileError)
             {
-                await client
-                    .from("login")
-                    .delete()
-                    .in(
-                        "username",
-                        loginUsers.map(
-                            x => x.username
-                        )
-                    );
+                await client .from("login").delete().in("username",loginUsers.map( x => x.username ));
 
                 showMessage(profileError.message);
                 return;
             }
         }
 
-        const successCount =
-            uploadReport.filter(
-                x => x.status === "Success"
-            ).length;
-
-        const duplicateCount =
-            uploadReport.filter(
-                x =>
-                    x.status ===
-                        "Duplicate Register Number" ||
-                    x.status ===
-                        "Duplicate Mail ID"
-            ).length;
-
+        const successCount = uploadReport.filter( x => x.status === "Success").length;
+        const duplicateCount =  uploadReport.filter(x => x.status === "Duplicate Register Number" ||  x.status === "Duplicate Mail ID").length;
         document.getElementById("bulkSummaryCard").style.display = "block";
+        document.getElementById("totalCount").innerText = students.length;
+        document.getElementById("uploadedCount").innerText =  successCount;
+        document.getElementById("duplicateCount").innerText =  duplicateCount;
+        document.getElementById("failedCount").innerText = duplicateCount;
 
-        document.getElementById("totalCount").innerText =
-            students.length;
-
-        document.getElementById("uploadedCount").innerText =
-            successCount;
-
-        document.getElementById("duplicateCount").innerText =
-            duplicateCount;
-
-        document.getElementById("failedCount").innerText =
-            duplicateCount;
-
-        const duplicateRecords =
-            uploadReport.filter(
-                x => x.status !== "Success"
-            );
-
+        const duplicateRecords = uploadReport.filter(x => x.status !== "Success" );
         document.getElementById("duplicateRegs").innerHTML =
             duplicateRecords.length > 0
-                ? duplicateRecords
-                      .map(
-                          x =>
+                ? duplicateRecords.map( x =>
                               `<div>
                                   <b>${x.reg_no}</b>
                                   - ${x.mail_id}
                                   - ${x.status}
                                </div>`
-                      )
-                      .join("")
-                : "No duplicate records found";
-
+                      ).join(""): "No duplicate records found";
         showMessage("Bulk upload completed successfully");
     }
     catch (err)
@@ -609,6 +529,7 @@ async function editUser(id)
     document.getElementById("editUsername").value = data.username;
     document.getElementById("editPassword").value = data.password;
     document.getElementById("editRole").value = data.role;
+    document.getElementById("editmailid").value = data.mail_id;
      // Store old register number
     document.getElementById("editOldRegNo").value = data.username;
     document.getElementById("editUserModal").style.display = "flex";
@@ -630,6 +551,7 @@ async function updateUser()
     const reg_no = document.getElementById("editUsername").value;
     const password =document.getElementById("editPassword").value;
     const oldRegNo =document.getElementById("editOldRegNo").value;
+    const mail_id=document.getElementById("editmailid").value;
     const role =document.getElementById("editRole").value;
     const { error } =
         await client
@@ -637,7 +559,8 @@ async function updateUser()
             .update({
                 username,
                 password,
-                role
+                role,
+                mail_id
             })
             .eq("id", id);
 
@@ -651,7 +574,7 @@ async function updateUser()
         await client
             .from("studentprofile")
             .update({
-                reg_no    
+                reg_no ,mail_id   
             })
             .eq("reg_no", oldRegNo);
 
@@ -660,7 +583,6 @@ async function updateUser()
         alert(errorUpdate.message);
         return;
     }
-
 
     alert("User Updated Successfully");
     closeEditModal();
@@ -912,11 +834,43 @@ window.addVideo = async function () {
     const module_name =document.getElementById("moduleName").value;
     const video_title =document.getElementById("videoTitle").value;
     const quiz_id = document.getElementById("quizId").value;
-    const file =document.getElementById("videoFile").files[0];
+    const assignment_id=document.getElementById("assignmentId").value;
+    const course_name=videoCourse.options[videoCourse.selectedIndex].text.trim();
+    
 
+    const moduleName = document.getElementById("moduleName").value.trim();
+    const videoTitle = document.getElementById("videoTitle").value.trim();
+    const fileInput = document.getElementById("videoFile");
+    const file = fileInput.files[0];
+
+    // Module Name validation
+    if (moduleName === "") 
+        {
+        alert("Please enter the Module Name.");
+        document.getElementById("moduleName").focus();
+        return;
+    }
+
+    // Video Title validation
+    if (videoTitle === "") 
+        {
+        alert("Please enter the Video Title.");
+        document.getElementById("videoTitle").focus();
+        return;
+    }
+
+    // Video File validation
     if (!file) 
-    {
-        alert("Please select MP4 file" );
+        {
+        alert("Please select a video file.");
+        fileInput.focus();
+        return;
+    }
+
+    if (file.type !== "video/mp4" || !file.name.toLowerCase().endsWith(".mp4")) 
+        {
+        alert("Only MP4 video files are allowed.");
+        fileInput.value = "";
         return;
     }
 
@@ -937,16 +891,15 @@ window.addVideo = async function () {
 
     // Save in Database
 
-    const { error } =
-        await client
-            .from("videos")
-            .insert([
+    const { error } = await client.from("videos").insert([
                 {
                     course_id,
                     module_name,
                     video_title,
                     video_url,
-                    quiz_id
+                    quiz_id,
+                    course_name,
+                    assignment_id
                 }
             ]);
 
@@ -968,7 +921,8 @@ window.addVideo = async function () {
     document.getElementById("videoFile").value = "";
     document.getElementById("videoFile").value = "";
     document.getElementById("quizId").value="";
-     loadQuizDropdown();
+    document.getElementById("assignmentId").value="";
+    loadQuizDropdown();
 };
 
 async function loadVideosTable()
@@ -1342,6 +1296,242 @@ async function deleteQuiz(id)
     }
     alert("Quiz Questions Deleted Successfully");
     loadQuizTable();
+}
+
+
+/* ADD ASSIGNMENT  */
+
+window.addAssignment = async function ()
+ {
+
+    const assignment_id = document.getElementById("assignmentIdDropDown").value;
+    
+    // const file = fileInput.files[0];
+
+    // // Assignment File validation
+    // if (!file) 
+    //     {
+    //     alert("Please select a assignment file.");
+    //     fileInput.focus();
+    //     return;
+    // }
+
+    // if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) 
+    //     {
+    //     alert("Only pdf files are allowed.");
+    //     fileInput.value = "";
+    //     return;
+    // }
+   
+
+    //  // Get Public URL
+    // const fileName =`${Date.now()}_${file.name}`;
+    // const { data } =client.storage.from("assignmnets").getPublicUrl(fileName );
+    // const assignment_url =data.publicUrl;
+
+    const assignment_work = document.getElementById("assignment_work").value.trim();
+
+    if (!assignment_work) 
+        {
+        alert("Please enter the assignment work.");
+        document.getElementById("assignment_work").focus();
+        return;
+    }
+
+    const { error } =await client.from("assignments")
+            .insert([
+                {
+                    assignment_id,
+                    assignment_work
+                }
+            ]);
+
+     if (error) 
+    {
+         if (error.code === "23505")
+        {
+            alert("Assigment -id already exists");
+            return;
+        }
+        alert(error.message);
+        return;
+    }
+
+    alert("Assignment Added Successfully");
+
+    /* CLEAR FIELDS */
+
+    document.getElementById("assignmentIdDropDown").selectedIndex=0;
+    document.getElementById("assignment_work").value="";
+    loadAssignmentTable();
+};
+
+async function loadAssignmentDropdown()
+{
+    const dropdown =document.getElementById("assignmentIdDropDown");
+    dropdown.innerHTML = "";
+    const { data, error } = await client.from("videos").select("assignment_id");
+    if (error)
+    {
+        alert(error.message);
+        return;
+    }
+
+    dropdown.innerHTML =`<option value="">Select Assignment Id</option>`;
+    data.forEach(video =>
+    {
+        if (video.assignment_id)
+        {
+            dropdown.innerHTML += `
+                <option
+                    value="${video.assignment_id}">
+                    ${video.assignment_id}
+                </option>
+            `;
+        }
+    });
+}
+
+/* LOAD ASSIGNMENT */
+
+async function loadAssignmentTable() 
+{
+    const { data } =await client.from("assignments").select("*");
+    const body = document.getElementById("assignmentBody");
+    body.innerHTML = "";
+    data.forEach(q => {
+        body.innerHTML += `
+            <tr>
+                <td>
+                    ${q.assignment_id}
+                </td>
+                <td>
+                    ${q.assignment_work}
+                </td>
+                <td>
+                    <button
+                        class="action-btn edit-btn"
+                        onclick="openEditAssignmentModal('${q.id}')">
+                        Edit
+                    </button>
+                    <button
+                        class="action-btn delete-btn"
+                        onclick="deleteAssignment('${q.id}')">
+                        Delete
+                    </button>
+                </td>
+
+            </tr>
+        `;
+    });
+}
+
+window.openEditAssignmentModal = async function (id)
+{
+    const { data, error } = await client.from("assignments").select("*").eq("id", id).single();
+    if (error)
+    {
+        alert(error.message);
+        return;
+    }
+
+    const { data: videos } = await client.from("videos").select("*");
+    const dropdown =document.getElementById("editAssignmentId");
+    dropdown.innerHTML = "";
+
+    videos.forEach(video =>
+    {
+        if (video.assignment_id)
+        {
+            dropdown.innerHTML += `
+                <option
+                    value="${video.assignment_id}">
+                    ${video.assignment_id}
+                </option>
+            `;
+        }
+    });
+
+
+    // Set selected item
+    dropdown.value=data.assignment_id;
+    // Set other fields
+    document.getElementById("editId").value = data.id;
+    document.getElementById("editAssignmentId").value = data.assignment_id;
+    document.getElementById("editAssignmentWork").value = data.assignment_work;
+    
+    // Open modal
+    document.getElementById("editAssignmentModal").classList.add("show");
+    //document.getElementById("editQuizModal").style.display = "flex";
+};
+
+
+/* EDIT ASSIGNMENT*/
+
+window.updateAssignment =async function (id) 
+{
+
+    const idVal =document.getElementById("editId").value;
+    const assignment_id =document.getElementById("editAssignmentId").value;
+    const assignment_work =document.getElementById("editAssignmentWork").value.trim();
+    // let assignment_url="";
+    // // Upload new file if selected
+    // if (file)
+    // {
+    //     const fileName =`${Date.now()}_${file.name}`;
+    //     await client.storage.from("assignments").upload(fileName,file);
+    //     const { data } =client.storage.from("assignment").getPublicUrl(fileName);
+    //     assignment_url = data.publicUrl;
+    // }
+   
+    
+    let updateData = {assignment_id, assignment_work};
+    const { error } =await client.from("assignments").update(updateData).eq("id", idVal);
+    if (error)
+    {
+        alert(error.message );
+        return;
+    }
+    alert("Assignment Updated Successfully");
+    closeAssignmentModal();
+    loadAssignmentTable();
+};
+
+function closeAssignmentModal()
+{
+    //document.getElementById("editQuizModal").style.display = "none";
+    document.getElementById("editAssignmentModal").classList.remove("show");
+}
+
+
+async function deleteAssignment(id)
+{
+    const confirmDelete =confirm("Are you sure want to delete this Assignment?" );
+    if (!confirmDelete)
+    {
+        return;
+    }
+
+     // Get assignmnet details
+    const { data } = await client.from("assignments").select("*").eq("id", id).single();
+
+    // Delete file from storage
+    if (data?.assignment_url)
+    {
+        const fileName = data.assignment_url.split("/").pop();
+        await client.storage.from("assignments").remove([fileName]);
+    }
+
+    
+    // Delete DB record
+    const { error } =await client.from("assignments").delete().eq("id", id);
+    if (error)
+    {
+       alert(error.message);
+       return;
+    }
+    alert("Assignment Deleted Successfully");
+    loadAssignmentTable();
 }
 
 /* ADD COLLEGE */

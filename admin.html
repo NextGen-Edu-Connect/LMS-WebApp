@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
 
     <style>
         * {
@@ -656,6 +657,10 @@
                      onclick="showPage('addQuizPage', this)">
                     ❓ Add Quiz
                 </div>
+                <div class="menu-item"
+                     onclick="showPage('addAssignmentPage', this)">
+                    ❓ Add Assignment
+                </div>
                  <div class="menu-item"
                      onclick="showPage('addCollegePage', this)">
                     🏫 Add College
@@ -677,6 +682,10 @@
                      onclick="showPage('manageQuizPage', this)">
                     📝 Manage Quiz
                 </div>
+                 <div class="menu-item"
+                     onclick="showPage('manageAssignmentPage', this)">
+                    📝 Manage Assignment
+                </div>
                 <div class="menu-item"
                      onclick="showPage('manageCollegePage', this)">
                     🏫 Manage College
@@ -697,8 +706,7 @@
                     Dashboard
                 </h1>
                 <p>
-                    Manage Users, Courses,
-                    Videos and Quizzes
+                    Manage Users, Courses, Videos,Assignments and Quizzes
                 </p>
             </div>
 
@@ -718,9 +726,15 @@
             <input type="password" id="newPassword" placeholder="Password" autocomplete="new-password">
         </div>
 
+       
+         <div class="input-group" id="studentMailIDGroup" >
+            <input type="text" id="newmailId" placeholder="mail ID" autocomplete="off">
+        </div>
+
         <!-- Hidden Student Name Field -->
-        <div class="input-group" id="studentNameGroup" style="display:none;">
-            <input type="text" id="studentName" placeholder="Student Name" autocomplete="off">
+         
+        <div class="input-group" id="studentNameGroup" >
+            <input type="text" id="studentName" placeholder="Name" autocomplete="off">
         </div>
 
         <div class="input-group">
@@ -866,9 +880,11 @@
                     </div>
 
                     <div class="input-group">
-                        <input type="text" id="quizId"
-                            placeholder="Quiz Id"
-                            readonly>
+                        <input type="text" id="quizId" placeholder="Quiz Id" readonly>
+                    </div>
+
+                    <div class="input-group">
+                        <input type="text" id="assignmentId" placeholder="Assignment Id" readonly>
                     </div>
                     <button class="btn"
                             onclick="addVideo()">
@@ -876,6 +892,8 @@
                     </button>
                 </div>
             </div>
+
+            
 
             <!-- ADD QUIZ -->
 
@@ -915,6 +933,39 @@
 
                     <button class="btn" onclick="addQuizQuestion()">
                         Add Quiz
+                    </button>
+
+                </div>
+            </div>
+
+
+            <!-- ADD ASSIGNMNET -->
+
+            <div class="page" id="addAssignmentPage">
+                <div class="card">
+                    <div class="card-title">
+                        Add Assignment
+                    </div>
+
+                    <div class="input-group">
+                        <select id="assignmentIdDropDown"></select>
+                    </div>
+
+                     <div class="input-group">
+                    <textarea
+                        id="assignment_work"
+                        placeholder="Enter Assignment Work"
+                        rows="10"
+                        style="width:100%; resize:vertical; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:8px;">
+                    </textarea>
+                     </div>
+
+                     <!-- <div class="input-group">
+                        <input type="file" id="assignmentFile" accept="pdf">
+                    </div> -->
+
+                    <button class="btn" onclick="addAssignment()">
+                        Add Assignment
                     </button>
 
                 </div>
@@ -1046,6 +1097,28 @@
                 </div>
             </div>
             <div id="adminMsg"></div>
+
+               <!-- MANAGE Assignment -->
+
+            <div class="page" id="manageAssignmentPage">
+                <div class="table-search">
+                    <input type="text" placeholder="Search Assignment ID..." onkeyup="searchTable(this, 'assignmentTable')">
+                </div>
+                <div class="table-container">
+                    <table id="quizTable">
+                        <thead>
+                            <tr>
+                                <th>Assignment ID</th>
+                                <th>Assignment Work</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assignmentBody">
+                       </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="adminMsg"></div>
         
 
     <!-- MANAGE COLLEGE -->
@@ -1086,15 +1159,15 @@
          <!-- Add this -->
         <input type="hidden" id="editOldRegNo">
         <div class="input-group">
-            <input type="text"
-                   id="editUsername"
-                   placeholder="Username">
+            <input type="text"  id="editUsername"  placeholder="Username">
+        </div>
+        <div class="input-group"> 
+            <input type="password" id="editPassword" placeholder="Password">
         </div>
         <div class="input-group">
-            <input type="password"
-                   id="editPassword"
-                   placeholder="Password">
+            <input type="text"  id="editmailid"  placeholder="MailId">
         </div>
+       
         <div class="input-group">
             <select id="editRole">
                 <option value="Student">
@@ -1192,8 +1265,6 @@
         <!-- PREVIEW -->
         <div class="input-group">
             <input type="text" id="editvideoURL" readonly>
-            </video>
-
         </div>
         <button class="btn" onclick="updateVideo()">
             Update Video
@@ -1252,6 +1323,46 @@
     </div>
 </div>
 
+
+<!-- EDIT ASSIGNMENT MODAL -->
+
+<div class="modal" id="editAssignmentModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Edit Assignments</h2>
+            <span class="close-btn" onclick="closeAssignmentModal()">
+                ✕
+            </span>
+        </div>
+        <input type="hidden"  id="editId">
+        <div class="input-group">
+            <select id="editAssignmentId">
+            </select>
+        </div>
+
+         <!-- ASSIGNMENT FILE
+        <div class="input-group">
+            <input type="file"  id="editAssignmentFile"  accept="pdf">
+        </div>
+        // PREVIEW 
+        <div class="input-group">
+            <input type="text" id="editAssignmentURL" readonly>
+        </div> -->
+
+         <div class="input-group">
+            <textarea
+                id="editAssignmentWork"
+                class="assignment-textarea"
+                placeholder="Enter Assignment Work">
+            </textarea>
+        </div>
+       
+        <button class="btn" onclick="updateAssignment()">
+            Update Assignment
+        </button>
+    </div>
+</div>
+
 <!-- EDIT COLLEGE MODAL -->
 
 <div class="modal" id="editCollegeModal">
@@ -1284,34 +1395,30 @@
     const videoCourse =document.getElementById("videoCourse");
     const moduleName = document.getElementById("moduleName");
     const quizId = document.getElementById("quizId");
-    function generateQuizId() 
+    const assignmentId = document.getElementById("assignmentId");
+    function generateQuizAssignmentId() 
     {
-        const course =
-            videoCourse.options[
-                videoCourse.selectedIndex
-            ].text
-                .trim()
-                .replace(/\s+/g, "_");
+        const course =videoCourse.options[videoCourse.selectedIndex].text.trim().replace(/\s+/g, "_");
+        const module =moduleName.value.trim().replace(/\s+/g, "_");
 
-        const module =
-            moduleName.value
-                .trim()
-                .replace(/\s+/g, "_");
-
-        if (course && module) {
-            quizId.value =
-                `${course}_${module}`;
+        if (course && module) 
+        {
+            quizId.value =`Q_${course}_${module}`;
+            assignmentId.value =`A_${course}_${module}`;
         }
-        else {
+        else 
+        {
             quizId.value = "";
+            assignmentId.value="";
 
         }
     }
 
-    videoCourse.addEventListener("change",generateQuizId);
-    moduleName.addEventListener("input",generateQuizId);
+    videoCourse.addEventListener("change",generateQuizAssignmentId);
+    moduleName.addEventListener("input",generateQuizAssignmentId);
 
-     function logout() {
+     function logout() 
+     {
             const isConfirmed = confirm("Are you sure you want to logout from the admin Portal?");
             if (isConfirmed) {
                 localStorage.removeItem("user");
@@ -1320,22 +1427,28 @@
             }
         }
 
-        function toggleStudentName() {
-    const role = document.getElementById("newRole").value;
-    const studentNameGroup = document.getElementById("studentNameGroup");
-
-    if (role === "Student") {
-        studentNameGroup.style.display = "block";
-    } else {
-        studentNameGroup.style.display = "none";
-        document.getElementById("studentName").value = "";
-    }
-}
+//     function toggleStudentName() 
+//     {
+//     const role = document.getElementById("newRole").value;
+//     const studentNameGroup = document.getElementById("studentNameGroup");
+    
+//     if (role === "Student") 
+//     {
+//         studentNameGroup.style.display = "block";   
+//     } 
+//     else 
+//     {
+//         studentNameGroup.style.display = "none"; 
+//         document.getElementById("studentName").value = "";
+      
+//     }
+// }
 
 // Run once when page loads
-document.addEventListener("DOMContentLoaded", function () {
-    toggleStudentName();
-});
+// document.addEventListener("DOMContentLoaded", function () 
+// {
+//     toggleStudentName();
+// });
 
 </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
